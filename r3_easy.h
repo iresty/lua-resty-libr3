@@ -38,6 +38,12 @@ int easy_r3_compile(void *tree, char** errstr);
 void *easy_r3_match_entry_create(const char *path, int method);
 void *easy_r3_match_route(const void *tree, void *entry);
 
+void *easy_r3_match_route_fetch_idx(void *route);
+size_t easy_r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
+    size_t *val_len);
+size_t easy_r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
+    size_t *val_len);
+
 void easy_r3_match_entry_free(void *entry);
 
 #ifdef __cplusplus

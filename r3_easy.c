@@ -59,11 +59,66 @@ easy_r3_match_route(const void *tree, void *entry)
 
     matched_route = r3_tree_match_route((R3Node *)tree,
                                         (match_entry *)entry);
-    if (matched_route) {
-        return (void *)matched_route->data;
+    return (void *)matched_route;
+}
+
+
+void *
+easy_r3_match_route_fetch_idx(void *route)
+{
+    R3Route                 *matched_route = route;
+
+    if (matched_route == NULL) {
+        return NULL;
     }
 
-    return NULL;
+    return (void *)matched_route->data;
+}
+
+
+size_t
+easy_r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
+                                size_t *val_len)
+{
+    match_entry             *m_entry = entry;
+    int                      i;
+
+    if (val ==  NULL) {
+        return m_entry->vars.slugs.size;
+    }
+
+    if (idx >= m_entry->vars.slugs.size) {
+        return -1;
+    }
+
+    i = m_entry->vars.slugs.entries[idx].len;
+    *val_len = i;
+
+    sprintf(val, "%*.*s", i, i, m_entry->vars.slugs.entries[idx].base);
+    return m_entry->vars.slugs.size;
+}
+
+
+size_t
+easy_r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
+                                 size_t *val_len)
+{
+    match_entry             *m_entry = entry;
+    int                      i_len;
+
+    if (val ==  NULL) {
+        return m_entry->vars.tokens.size;
+    }
+
+    if (idx >= m_entry->vars.tokens.size) {
+        return -1;
+    }
+
+    i_len = m_entry->vars.tokens.entries[idx].len;
+    *val_len = i_len;
+
+    sprintf(val, "%*.*s", i_len, i_len, m_entry->vars.tokens.entries[idx].base);
+    return m_entry->vars.tokens.size;
 }
 
 

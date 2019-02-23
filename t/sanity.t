@@ -10,7 +10,6 @@ plan tests => repeat_each() * (blocks() * 3);
 
 our $HttpConfig = <<'_EOC_';
     lua_package_path 'lib/?.lua;;';
-    lua_package_cpath '/usr/local/lib/?.so;;';
 _EOC_
 
 run_tests();
@@ -23,8 +22,8 @@ __DATA__
     location = /t {
         content_by_lua_block {
             -- foo handler
-            function foo(tokens, params)
-                ngx.say("ddddddd")
+            function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
             end
 
             -- r3router
@@ -43,7 +42,7 @@ __DATA__
             -- don't forget!
             r:compile()
 
-            local ok = r:dispatch("GET", "/foo", ngx.req.get_uri_args(), nil)
+            local ok = r:dispatch("GET", "/foo/12/34", ngx.req.get_uri_args(), nil)
             if ok then
                 ngx.say("hit")
             else
@@ -56,5 +55,5 @@ GET /t
 --- no_error_log
 [error]
 --- response_body
-ddddddd
+foo: {"name":"34","id":"12"}
 hit

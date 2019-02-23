@@ -1,7 +1,13 @@
+local base = require "resty.core.base"
+local str_buff = base.get_string_buf(256)
+local buf_len_prt = base.get_size_ptr()
+local new_tab = base.new_tab
+local tonumber = tonumber
+
 local ffi          = require "ffi"
 local ffi_cast     = ffi.cast
 local ffi_cdef     = ffi.cdef
-local string_len   = string.len
+local ffi_string   = ffi.string
 
 local function load_shared_lib(so_name)
     local string_gmatch = string.gmatch
@@ -40,17 +46,23 @@ end
 
 
 ffi_cdef[[
-  void *easy_r3_create(int cap);
-  void easy_r3_free(void * tree);
+void *easy_r3_create(int cap);
+void easy_r3_free(void * tree);
 
-  void *easy_r3_insert(void *tree, int method, const char *path,
-      int path_len, void *data, char **errstr);
-  int easy_r3_compile(void *tree, char** errstr);
+void *easy_r3_insert(void *tree, int method, const char *path,
+    int path_len, void *data, char **errstr);
+int easy_r3_compile(void *tree, char** errstr);
 
-  void *easy_r3_match_entry_create(const char *path, int method);
-  void *easy_r3_match_route(const void *tree, void *entry);
+void *easy_r3_match_entry_create(const char *path, int method);
+void *easy_r3_match_route(const void *tree, void *entry);
+void *easy_r3_match_route_fetch_idx(void *route);
 
-  void easy_r3_match_entry_free(void *entry);
+int easy_r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
+    size_t *val_len);
+int easy_r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
+    size_t *val_len);
+
+void easy_r3_match_entry_free(void *entry);
 ]]
 
 
@@ -76,9 +88,7 @@ local _METHODS = {
   OPTIONS = _METHOD_OPTIONS,
 }
 
-----------------------------------------------------------------
--- new
-----------------------------------------------------------------
+
 function _M.new(routes)
     local route_n = routes and #routes or 10
 
@@ -125,13 +135,8 @@ function _M.compile(self)
     return r3.easy_r3_compile(self.tree, nil)
 end
 
-function _M.dump(self, level)
-    level = level or 0
-    return r3.r3_tree_dump(self.tree, level)
-end
-
 function _M.tree_free(self)
-    return r3.r3_tree_free(self.tree)
+    return r3.easy_r3_free(self.tree)
 end
 
 function _M.easy_r3_match_entry_free(self, entry)
@@ -145,7 +150,7 @@ function _M.insert_route(self, method, path, block)
     self.match_data[self.match_data_index] = block
     local dataptr = ffi_cast('void *', ffi_cast('intptr_t', self.match_data_index))
 
-    r3.easy_r3_insert(self.tree, method, path, string_len(path), dataptr, nil)
+    r3.easy_r3_insert(self.tree, method, path, #path, dataptr, nil)
 end
 
 function _M.match_route(self, method, route, ...)
@@ -153,32 +158,37 @@ function _M.match_route(self, method, route, ...)
     local stokens={}
 
     local entry = r3.easy_r3_match_entry_create(route, method)
-    local data_idx = r3.easy_r3_match_route(self.tree, entry)
-    if data_idx == nil then
-      self:easy_r3_match_entry_free(entry);
-      return false
+    local match_route = r3.easy_r3_match_route(self.tree, entry)
+    if match_route == nil then
+        self:easy_r3_match_entry_free(entry);
+        return false
     end
 
+    local data_idx = r3.easy_r3_match_route_fetch_idx(match_route)
+
     -- get match data from index
-    local i = tonumber(ffi_cast('intptr_t', ffi_cast('void *', data_idx)))
-    block = self.match_data[i]
+    local idx = tonumber(ffi_cast('intptr_t', ffi_cast('void *', data_idx)))
+    block = self.match_data[idx]
 
-    -- todo: fetch var information
-    -- ngx.log(ngx.ERR, "match_route 0006 ", type(entry.vars.tokens.size))
-    -- if entry and entry.vars and entry.vars.len then
-    --   for i=0, entry.vars.len-1 do
-    --     local token = ffi_string(entry.vars.tokens[i])
-    --     ngx.log(ngx.ERR, "match_route 0006 ", token)
+    -- todo: fetch tokers and slugs information
+    buf_len_prt[0] = 0
+    local cnt = r3.easy_r3_match_entry_fetch_slugs(entry, 0, nil, buf_len_prt)
+    local params = new_tab(0, cnt)
+    for i = 0, cnt - 1 do
+        r3.easy_r3_match_entry_fetch_slugs(entry, i, str_buff, buf_len_prt)
+        local key = ffi_string(str_buff, buf_len_prt[0])
 
-    --     table_insert(stokens, token)
-    --   end
-    -- end
+        r3.easy_r3_match_entry_fetch_tokens(entry, i, str_buff, buf_len_prt)
+        local val = ffi_string(str_buff, buf_len_prt[0])
+
+        params[key] = val
+    end
 
     -- free
     self:easy_r3_match_entry_free(entry)
 
     -- execute block
-    block(stokens, ...)
+    block(params, ...)
     return true
 end
 
@@ -186,29 +196,30 @@ end
 -- method
 ----------------------------------------------------------------
 function _M.get(self, path, block)
-  self:insert_route(_METHODS["GET"], path, block)
+    self:insert_route(_METHODS["GET"], path, block)
 end
 
 
 function _M.post(self, path, block)
-  self:insert_route(_METHODS["POST"], path, block)
+    self:insert_route(_METHODS["POST"], path, block)
 end
 
 
 function _M.put(self, path, block)
-  self:insert_route(_METHODS["PUT"], path, block)
+    self:insert_route(_METHODS["PUT"], path, block)
 end
 
 
 function _M.delete(self, path, block)
-  self:insert_route(_METHODS["DELETE"], path, block)
+    self:insert_route(_METHODS["DELETE"], path, block)
 end
 
 ----------------------------------------------------------------
 -- dispatcher
 ----------------------------------------------------------------
 function _M.dispatch(self, method, path, ...)
-  return self:match_route(_METHODS[method], path, ...)
+    return self:match_route(_METHODS[method], path, ...)
 end
+
 
 return _M
