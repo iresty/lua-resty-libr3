@@ -43,7 +43,7 @@ ${OBJS} : %.o : %.c
 	$(CC) $(MY_CFLAGS) -c $<
 
 ${C_SO_NAME} : ${OBJS}
-	$(CC) $(MY_LDFLAGS) $(OBJS) libr3.so -o $@
+	$(CC) $(MY_LDFLAGS) $(OBJS) -lr3 -o $@
 
 ### install:      Install the library to runtime
 .PHONY: install
