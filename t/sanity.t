@@ -6,7 +6,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 3);
 
 our $HttpConfig = <<'_EOC_';
     lua_package_path 'lib/?.lua;;';
@@ -40,10 +40,8 @@ __DATA__
             r:get("/foo/{id}/{name}", foo)
             r:post("/foo/{id}/{name}", foo)
 
-            -- don\'t forget!
+            -- don't forget!
             r:compile()
-
-            ngx.log(ngx.ERR, "foo: ", tostring(foo))
 
             local ok = r:dispatch("GET", "/foo", ngx.req.get_uri_args(), nil)
             if ok then
@@ -55,5 +53,8 @@ __DATA__
     }
 --- request
 GET /t
+--- no_error_log
+[error]
 --- response_body
+ddddddd
 hit

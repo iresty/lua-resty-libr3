@@ -28,10 +28,10 @@ extern "C" {
  * **************************************************************************
  */
 
-void * easy_r3_create(int cap);
+void *easy_r3_create(int cap);
 void easy_r3_free(void * tree);
 
-void * easy_r3_insert(void *tree, int method, const char *path,
+void *easy_r3_insert(void *tree, int method, const char *path,
     int path_len, void *data, char **errstr);
 int easy_r3_compile(void *tree, char** errstr);
 

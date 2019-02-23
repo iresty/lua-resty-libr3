@@ -2,9 +2,6 @@ local ffi          = require "ffi"
 local ffi_cast     = ffi.cast
 local ffi_cdef     = ffi.cdef
 local string_len   = string.len
-local string_upper = string.upper
-local table_insert = table.insert
-local unpack = unpack or table.unpack
 
 local function load_shared_lib(so_name)
     local string_gmatch = string.gmatch
@@ -34,28 +31,26 @@ local function load_shared_lib(so_name)
     return nil, tried_paths
 end
 
-local r3, tried_paths = load_shared_lib("libr3.so")
+local r3, tried_paths = load_shared_lib("libr3easy.so")
 if not r3 then
     tried_paths[#tried_paths + 1] = 'tried above paths but can not load '
-                                    .. 'librestydomainsuffix.so'
+                                    .. 'libr3easy.so'
     error(table.concat(tried_paths, '\r\n', 1, #tried_paths))
 end
 
 
 ffi_cdef[[
-  void * easy_r3_create(int cap);
+  void *easy_r3_create(int cap);
   void easy_r3_free(void * tree);
 
-  void * easy_r3_insert(void *tree, int method, const char *path,
+  void *easy_r3_insert(void *tree, int method, const char *path,
       int path_len, void *data, char **errstr);
   int easy_r3_compile(void *tree, char** errstr);
 
   void *easy_r3_match_entry_create(const char *path, int method);
-  void *easy_r3_match_route(void *tree, void *entry);
-  void *easy_r3_fetch_var_slugs(void *entry, void *slugs, int max_len);
-  void *easy_r3_fetch_var_slugs(void *entry, void *slugs, int max_len);
+  void *easy_r3_match_route(const void *tree, void *entry);
 
-  void match_entry_free(match_entry *entry);
+  void easy_r3_match_entry_free(void *entry);
 ]]
 
 
@@ -85,33 +80,37 @@ local _METHODS = {
 -- new
 ----------------------------------------------------------------
 function _M.new(routes)
+    local route_n = routes and #routes or 10
+
     local self = setmetatable({
-      tree = r3.r3_tree_create(10),
-      match_data_index = 0,
-      match_data = {},
-    }, mt)
+                                tree = r3.easy_r3_create(route_n),
+                                match_data_index = 0,
+                                match_data = {},
+                              }, mt)
 
     if not routes then return self end
 
     -- register routes
-    for _, route in ipairs(routes) do
-      local method = route[1]
-      local bit_methods
-      if type(method) ~= "table" then
-        bit_methods = _METHODS[method]
+    for i = 1, route_n do
+        local route = routes[i]
 
-      else
-        local methods = {}
-        for _, m in ipairs(method) do
-          table_insert(methods, _METHODS[m])
+        local method  = route[1]
+        local path    = route[2]
+        local handler = route[3]
+
+        local bit_methods
+        if type(method) ~= "table" then
+            bit_methods = _METHODS[method]
+
+        else
+            bit_methods = 0
+            for _, m in ipairs(method) do
+                bit_methods = bit.bor(bit_methods, _METHODS[m])
+            end
         end
-        bit_methods = bit.bor(unpack(methods))
-      end
 
-      local path    = route[2]
-      local handler = route[3]
-      -- register
-      self:insert_route(bit_methods, path, handler)
+        -- register
+        self:insert_route(bit_methods, path, handler)
     end
 
     -- compile
@@ -123,7 +122,7 @@ function _M.new(routes)
 end
 
 function _M.compile(self)
-    return r3.r3_tree_compile(self.tree, nil)
+    return r3.easy_r3_compile(self.tree, nil)
 end
 
 function _M.dump(self, level)
@@ -135,8 +134,8 @@ function _M.tree_free(self)
     return r3.r3_tree_free(self.tree)
 end
 
-function _M.match_entry_free(self, entry)
-    return r3.match_entry_free(entry)
+function _M.easy_r3_match_entry_free(self, entry)
+    return r3.easy_r3_match_entry_free(entry)
 end
 
 function _M.insert_route(self, method, path, block)
@@ -146,33 +145,25 @@ function _M.insert_route(self, method, path, block)
     self.match_data[self.match_data_index] = block
     local dataptr = ffi_cast('void *', ffi_cast('intptr_t', self.match_data_index))
 
-    -- route * r3_tree_insert_routel_ex(node *tree, int method, const char *path, int path_len, void *data, char **errstr);
-    r3.r3_tree_insert_routel_ex(self.tree, method, path, string_len(path), dataptr, nil)
+    r3.easy_r3_insert(self.tree, method, path, string_len(path), dataptr, nil)
 end
 
 function _M.match_route(self, method, route, ...)
     local block
     local stokens={}
 
-    local entry = r3.match_entry_createl(route, string_len(route))
-    entry.request_method = method;
-
-    local node = r3.r3_tree_match_route(self.tree, entry)
-    if node == nil then
-      self:match_entry_free(entry);
+    local entry = r3.easy_r3_match_entry_create(route, method)
+    local data_idx = r3.easy_r3_match_route(self.tree, entry)
+    if data_idx == nil then
+      self:easy_r3_match_entry_free(entry);
       return false
     end
 
-    ngx.log(ngx.ERR, "match_route 0003")
-
     -- get match data from index
-    local i = tonumber(ffi_cast('intptr_t', ffi_cast('void *', node.data)))
-
-    ngx.log(ngx.ERR, "match_route 0004 ", i)
+    local i = tonumber(ffi_cast('intptr_t', ffi_cast('void *', data_idx)))
     block = self.match_data[i]
-    ngx.log(ngx.ERR, "match_route 0005 ", tostring(block))
 
-    -- token proc
+    -- todo: fetch var information
     -- ngx.log(ngx.ERR, "match_route 0006 ", type(entry.vars.tokens.size))
     -- if entry and entry.vars and entry.vars.len then
     --   for i=0, entry.vars.len-1 do
@@ -184,7 +175,7 @@ function _M.match_route(self, method, route, ...)
     -- end
 
     -- free
-    r3.match_entry_free(entry)
+    self:easy_r3_match_entry_free(entry)
 
     -- execute block
     block(stokens, ...)
@@ -197,12 +188,18 @@ end
 function _M.get(self, path, block)
   self:insert_route(_METHODS["GET"], path, block)
 end
+
+
 function _M.post(self, path, block)
   self:insert_route(_METHODS["POST"], path, block)
 end
+
+
 function _M.put(self, path, block)
   self:insert_route(_METHODS["PUT"], path, block)
 end
+
+
 function _M.delete(self, path, block)
   self:insert_route(_METHODS["DELETE"], path, block)
 end
@@ -212,32 +209,6 @@ end
 ----------------------------------------------------------------
 function _M.dispatch(self, method, path, ...)
   return self:match_route(_METHODS[method], path, ...)
-end
-
-function _M.dispatch_ngx(self)
-  ngx.log(ngx.ERR, "hello 0000")
-  local method = string_upper(ngx.var.request_method)
-  local path = ngx.var.uri
-  local params = {}
-  local body = ""
-
-  ngx.log(ngx.ERR, "hello 0001")
-
-  if method == "GET" then
-    params = ngx.req.get_uri_args()
-
-  elseif method == "POST" then
-    ngx.req.read_body()
-    params = ngx.req.get_post_args()
-
-  else
-    ngx.req.read_body()
-    body = ngx.req.get_body_data()
-  end
-
-  ngx.log(ngx.ERR, "hello 0002")
-
-  return self:match_route(_METHODS[method], path, params, body)
 end
 
 return _M

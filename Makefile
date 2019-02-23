@@ -23,7 +23,7 @@ default: compile
 
 ### test:         Run test suite. Use test=... for specific tests
 .PHONY: test
-test: compile-list compile
+test: compile
 	    TEST_NGINX_SLEEP=0.001 \
 	    TEST_NGINX_LOG_LEVEL=info \
 	    prove -j$(jobs) -r $(test)
@@ -45,7 +45,7 @@ ${OBJS} : %.o : %.c
 ${C_SO_NAME} : ${OBJS}
 	$(CC) $(MY_LDFLAGS) $(OBJS) libr3.so -o $@
 
-### install:      Install the public domain suffix library to runtime
+### install:      Install the library to runtime
 .PHONY: install
 install:
 	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/resty/r3_easy

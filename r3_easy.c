@@ -59,7 +59,11 @@ easy_r3_match_route(const void *tree, void *entry)
 
     matched_route = r3_tree_match_route((R3Node *)tree,
                                         (match_entry *)entry);
-    return (void *)matched_route;
+    if (matched_route) {
+        return (void *)matched_route->data;
+    }
+
+    return NULL;
 }
 
 
