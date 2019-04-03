@@ -174,6 +174,7 @@ function _M.match_route(self, method, route, ...)
     buf_len_prt[0] = 0
     local cnt = r3.r3_match_entry_fetch_slugs(entry, 0, nil, buf_len_prt)
     local params = new_tab(0, cnt)
+    local idx = 0
     for i = 0, cnt - 1 do
         r3.r3_match_entry_fetch_slugs(entry, i, str_buff, buf_len_prt)
         local key = ffi_string(str_buff, buf_len_prt[0])
@@ -181,7 +182,13 @@ function _M.match_route(self, method, route, ...)
         r3.r3_match_entry_fetch_tokens(entry, i, str_buff, buf_len_prt)
         local val = ffi_string(str_buff, buf_len_prt[0])
 
-        params[key] = val
+        if key == "" then
+            idx = idx + 1
+            params[idx] = val
+        
+        else
+            params[key] = val
+        end
     end
 
     -- free

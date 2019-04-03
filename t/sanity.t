@@ -25,8 +25,11 @@ __DATA__
             function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
+            function bar(params)
+                ngx.say("bar: ", require("cjson").encode(params))
+            end
 
-            -- r3router
+            -- r3 router
             local r3router = require "resty.r3";
             local r = r3router.new()
 
@@ -35,14 +38,14 @@ __DATA__
             ngx.say("hello r3!")
             end)
 
-            r:get("/foo", foo)
+            r:get("/foo", bar)
             r:get("/foo/{id}/{name}", foo)
-            r:post("/foo/{id}/{name}", foo)
+            r:post("/foo/{id}/{name}", bar)
 
             -- don't forget!
             r:compile()
 
-            local ok = r:dispatch("GET", "/foo/12/34", ngx.req.get_uri_args(), nil)
+            local ok = r:dispatch("GET", "/foo/a/b", ngx.req.get_uri_args(), nil)
             if ok then
                 ngx.say("hit")
             else
@@ -55,5 +58,51 @@ GET /t
 --- no_error_log
 [error]
 --- response_body
-foo: {"name":"34","id":"12"}
+foo: {"name":"b","id":"a"}
+hit
+
+
+
+=== TEST 2: anonymous variable
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            -- foo handler
+            function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+            function bar(params)
+                ngx.say("bar: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3";
+            local r = r3router.new()
+
+            -- routing
+            r:get("/", function(tokens, params)
+            ngx.say("hello r3!")
+            end)
+
+            r:get("/foo", bar)
+            r:get([[/foo/{:\w+}/{:\w+}]], foo)
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch("GET", "/foo/idv/namev", ngx.req.get_uri_args(), nil)
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+foo: ["idv","namev"]
 hit

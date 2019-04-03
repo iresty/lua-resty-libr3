@@ -14,7 +14,7 @@ lua-resty-r3
 ### lua-resty-r3
 
 ```
-luarocks install https://raw.githubusercontent.com/toritori0318/lua-resty-r3/master/lua-resty-r3-dev-1.rockspec
+luarocks install https://raw.githubusercontent.com/membphis/lua-resty-r3/master/lua-resty-r3.rockspec
 ```
 
 ## SYNOPSYS
