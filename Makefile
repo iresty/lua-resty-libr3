@@ -17,6 +17,7 @@ MY_CFLAGS := $(CFLAGS) -DBUILDING_SO
 MY_LDFLAGS := $(LDFLAGS) -fvisibility=hidden
 
 OBJS := r3_easy.o
+R3_FOLDER := r3
 R3_CONGIGURE := r3/configure
 R3_STATIC_LIB := r3/.libs/libr3.a
 
@@ -40,13 +41,16 @@ clean:
 ### compile:      Compile library
 .PHONY: compile
 
-compile: ${R3_CONGIGURE} ${R3_STATIC_LIB} $(C_SO_NAME) 
+compile: ${R3_FOLDER} ${R3_CONGIGURE} ${R3_STATIC_LIB} $(C_SO_NAME) 
 
 ${OBJS} : %.o : %.c
 	$(CC) $(MY_CFLAGS) -c $<
 
 ${C_SO_NAME} : ${OBJS}
 	$(CC) $(MY_LDFLAGS) $(OBJS) r3/.libs/libr3.a -o $@
+
+${R3_FOLDER} :
+	cd deps && tar -xvf r3-2.0.tar.gz && mv r3-master ../r3
 
 ${R3_CONGIGURE} : 
 	cd r3 && sh autogen.sh
