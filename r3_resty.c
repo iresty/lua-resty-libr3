@@ -1,8 +1,8 @@
-#include "r3_easy.h"
+#include "r3_resty.h"
 
 
 void *
-easy_r3_create(int cap)
+r3_create(int cap)
 {
     R3Node *tree = r3_tree_create(cap);
     return (void *)tree;
@@ -10,7 +10,7 @@ easy_r3_create(int cap)
 
 
 void
-easy_r3_free(void * tree)
+r3_free(void * tree)
 {
     if (tree == NULL) {
         return;
@@ -21,7 +21,7 @@ easy_r3_free(void * tree)
 
 
 void *
-easy_r3_insert(void *tree, int method, const char *path,
+r3_insert(void *tree, int method, const char *path,
                int path_len, void *data, char **errstr)
 {
     R3Node *r3_tree = (R3Node *)tree;
@@ -33,14 +33,14 @@ easy_r3_insert(void *tree, int method, const char *path,
 
 
 int
-easy_r3_compile(void *tree, char** errstr)
+r3_compile(void *tree, char** errstr)
 {
     return r3_tree_compile((R3Node *)tree, errstr);
 }
 
 
 void *
-easy_r3_match_entry_create(const char *path, int method)
+r3_match_entry_create(const char *path, int method)
 {
     match_entry             *entry;
 
@@ -52,7 +52,7 @@ easy_r3_match_entry_create(const char *path, int method)
 
 
 void *
-easy_r3_match_route(const void *tree, void *entry)
+r3_match_route(const void *tree, void *entry)
 {
     R3Route                 *matched_route;
 
@@ -63,7 +63,7 @@ easy_r3_match_route(const void *tree, void *entry)
 
 
 void *
-easy_r3_match_route_fetch_idx(void *route)
+r3_match_route_fetch_idx(void *route)
 {
     R3Route                 *matched_route = route;
 
@@ -76,7 +76,7 @@ easy_r3_match_route_fetch_idx(void *route)
 
 
 size_t
-easy_r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
+r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
                                 size_t *val_len)
 {
     match_entry             *m_entry = entry;
@@ -99,7 +99,7 @@ easy_r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
 
 
 size_t
-easy_r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
+r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
                                  size_t *val_len)
 {
     match_entry             *m_entry = entry;
@@ -122,7 +122,7 @@ easy_r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
 
 
 void
-easy_r3_match_entry_free(void *entry)
+r3_match_entry_free(void *entry)
 {
     if (entry == NULL)
         return;

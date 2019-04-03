@@ -1,5 +1,5 @@
-#ifndef LUA_RESTY_R3_EASY_H
-#define LUA_RESTY_R3_EASY_H
+#ifndef LUA_RESTY_R3_RESTY_H
+#define LUA_RESTY_R3_RESTY_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,23 +29,23 @@ extern "C" {
  * **************************************************************************
  */
 
-void *easy_r3_create(int cap);
-void easy_r3_free(void * tree);
+void *r3_create(int cap);
+void r3_free(void * tree);
 
-void *easy_r3_insert(void *tree, int method, const char *path,
+void *r3_insert(void *tree, int method, const char *path,
     int path_len, void *data, char **errstr);
-int easy_r3_compile(void *tree, char** errstr);
+int r3_compile(void *tree, char** errstr);
 
-void *easy_r3_match_entry_create(const char *path, int method);
-void *easy_r3_match_route(const void *tree, void *entry);
+void *r3_match_entry_create(const char *path, int method);
+void *r3_match_route(const void *tree, void *entry);
 
-void *easy_r3_match_route_fetch_idx(void *route);
-size_t easy_r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
+void *r3_match_route_fetch_idx(void *route);
+size_t r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
     size_t *val_len);
-size_t easy_r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
+size_t r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
     size_t *val_len);
 
-void easy_r3_match_entry_free(void *entry);
+void r3_match_entry_free(void *entry);
 
 #ifdef __cplusplus
 }

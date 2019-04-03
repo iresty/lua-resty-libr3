@@ -5,7 +5,7 @@ LUA_INCLUDE_DIR ?= $(PREFIX)/include
 LUA_LIB_DIR ?=     $(PREFIX)/lualib/$(LUA_VERSION)
 INSTALL ?= install
 
-C_SO_NAME := libr3easy.so
+C_SO_NAME := libr3.so
 
 CFLAGS := -O3 -g -Wall -fpic
 
@@ -16,7 +16,7 @@ LDFLAGS := -shared
 MY_CFLAGS := $(CFLAGS) -DBUILDING_SO
 MY_LDFLAGS := $(LDFLAGS) -fvisibility=hidden
 
-OBJS := r3_easy.o
+OBJS := r3_resty.o
 R3_FOLDER := r3
 R3_CONGIGURE := r3/configure
 R3_STATIC_LIB := r3/.libs/libr3.a
@@ -50,7 +50,7 @@ ${C_SO_NAME} : ${OBJS}
 	$(CC) $(MY_LDFLAGS) $(OBJS) r3/.libs/libr3.a -o $@
 
 ${R3_FOLDER} :
-	cd deps && tar -xvf r3-2.0.tar.gz && mv r3-master ../r3
+	cd deps && tar -xvf r3-2.0.tar.gz && mv r3 ../
 
 ${R3_CONGIGURE} : 
 	cd r3 && sh autogen.sh
