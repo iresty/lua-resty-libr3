@@ -17,6 +17,8 @@ MY_CFLAGS := $(CFLAGS) -DBUILDING_SO
 MY_LDFLAGS := $(LDFLAGS) -fvisibility=hidden
 
 OBJS := r3_easy.o
+R3_CONGIGURE := r3/configure
+R3_STATIC_LIB := r3/.libs/libr3.a
 
 .PHONY: default
 default: compile
@@ -32,18 +34,26 @@ test: compile
 ### clean:        Remove generated files
 .PHONY: clean
 clean:
-	rm -f $(C_SO_NAME) $(OBJS)
+	cd r3 && make clean
+	rm -f $(C_SO_NAME) $(OBJS) ${R3_CONGIGURE}
 
 ### compile:      Compile library
 .PHONY: compile
 
-compile: $(C_SO_NAME)
+compile: ${R3_CONGIGURE} ${R3_STATIC_LIB} $(C_SO_NAME) 
 
 ${OBJS} : %.o : %.c
 	$(CC) $(MY_CFLAGS) -c $<
 
 ${C_SO_NAME} : ${OBJS}
-	$(CC) $(MY_LDFLAGS) $(OBJS) -lr3 -o $@
+	$(CC) $(MY_LDFLAGS) $(OBJS) r3/.libs/libr3.a -o $@
+
+${R3_CONGIGURE} : 
+	cd r3 && sh autogen.sh
+
+${R3_STATIC_LIB} :
+	cd r3 && sh configure && make
+	
 
 ### install:      Install the library to runtime
 .PHONY: install

@@ -8,6 +8,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "r3/include/r3.h"
 
 
 #ifdef BUILDING_SO
