@@ -3,6 +3,7 @@ local str_buff = base.get_string_buf(256)
 local buf_len_prt = base.get_size_ptr()
 local new_tab = base.new_tab
 local tonumber = tonumber
+local ipairs = ipairs
 
 
 local ffi          = require "ffi"
@@ -125,7 +126,7 @@ function _M.new(routes)
         end
 
         -- register
-        self:insert_route(bit_methods, path, handler)
+        insert_route(self, bit_methods, path, handler)
     end
 
     -- compile
@@ -152,7 +153,7 @@ function _M.r3_match_entry_free(self, entry)
 end
 
 
-function _M.insert_route(self, method, path, block)
+local function insert_route(self, method, path, block)
     if not method or not path or not block then return end
 
     self.match_data_index = self.match_data_index + 1
@@ -212,17 +213,27 @@ end
 ----------------------------------------------------------------
 -- method
 ----------------------------------------------------------------
-function _M.get(self, path, block)
-    self:insert_route(_METHODS["GET"], path, block)
-end
-
-
 for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", 
                        "OPTIONS"}) do
     local l_name = string.lower(name)
     _M[l_name] = function (self, ...)
-        return self:insert_route(_METHODS[name], ...)
+        return insert_route(self, _METHODS[name], ...)
     end
+end
+
+function _M.insert_route(self, method, path, block)
+    local bit_methods
+    if type(method) ~= "table" then
+        bit_methods = _METHODS[method]
+
+    else
+        bit_methods = 0
+        for _, m in ipairs(method) do
+            bit_methods = bit.bor(bit_methods, _METHODS[m])
+        end
+    end
+
+    return insert_route(self, bit_methods, path, block)
 end
 
 

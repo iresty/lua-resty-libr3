@@ -16,11 +16,25 @@ function foo(tokens, params)
 end
 
 -- router
-local r = r3router.new({
-    {"GET",           "/",                           foo},
-    {"GET",           "/foo/bar/baz/hoge/fuga/piyo", foo},
-    {{"GET","POST"},  "/foo/{id}/{name}",            foo}
-})
+local r3router = require "resty.r3";
+local r = r3router.new()
+
+r:get("/", foo)
+for i = 1, 1000 do
+    r:get("/a/" .. i, foo)
+end
+
+r:get("/foo/bar/baz/hoge/fuga/piyo", foo)
+for i = 1, 1000 do
+    r:get("/foo/bar/baz/hoge/fuga/piyo/" .. i, foo)
+end
+
+r:insert_route({"GET", "POST"}, "/foo/{id}/{name}", foo)
+for i = 1, 1000 do
+    r:insert_route({"GET", "POST"}, "/bar/{id}/{name}" .. i, foo)
+end
+
+r:compile()
 
 ----------------------------------------------------------------------
 -- bench 1
@@ -40,6 +54,6 @@ end)
 -- bench 3
 time("get /foo/{id}/{name}", function()
   for i=0, 10000000 do
-    r:dispatch("GET", "/foo/123/999")
+      r:dispatch("GET", "/foo/123/999")
   end
 end)
