@@ -19,8 +19,8 @@ luarocks install https://raw.githubusercontent.com/membphis/lua-resty-r3/master/
 
 ## SYNOPSYS
 
-```nginx
- location = /t {
+```lua
+ location / {
      content_by_lua_block {
          -- r3 router
          local r3router = require "resty.r3";
