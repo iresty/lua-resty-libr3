@@ -19,86 +19,37 @@ luarocks install https://raw.githubusercontent.com/membphis/lua-resty-r3/master/
 
 ## SYNOPSYS
 
-### Pattern1
+```nginx
+ location = /t {
+     content_by_lua_block {
+         -- r3 router
+         local r3router = require "resty.r3";
+         local r = r3router.new() 
 
-```lua
-location / {
-  content_by_lua '
-    -- foo handler
-    function foo(tokens, params)
-      ngx.say("fooooooooooooooooooooooo")
-      ngx.say("tokens:" .. table.concat(tokens, ","))
-      for key, value in pairs(params) do
-        ngx.say("param:" .. key .. "=" .. value)
-      end
-    end
+         local encode_json = require("cjson.safe").encode
 
-    -- r3router
-    local r3router = require "resty.r3";
-    local r = r3router.new()
-    -- routing
-    r:get("/", function(tokens, params)
-      ngx.say("hello r3!")
-    end)
-    r:get("/foo", foo)
-    r:get("/foo/{id}/{name}", foo)
-    r:post("/foo/{id}/{name}", foo)
-    -- don\'t forget!
-    r:compile()
+         function foo(params) -- foo handler
+             ngx.say("foo: ", encode_json(params))
+         end
+         function bar(params)
+             ngx.say("bar: ", encode_json(params))
+         end 
 
-    -- dispatcher
-    local ok = r:dispatch_ngx()
-    ---- or manual
-    ---- local ok = r:dispatch("GET", "/foo/123/999", ngx.req.get_uri_args(), ngx.req.get_post_args())
-    if ok then
-      ngx.status = 200
-    else
-      ngx.status = 404
-      ngx.print("Not found")
-    end
-  ';
-}
-```
+         -- routing
+         r:get("/foo", bar)
+         r:get("/foo/{id}/{name}", foo)
+         r:post("/foo/{id}/{name}", bar) 
 
-### Pattern2
+         -- don't forget!
+         r:compile() 
 
-```lua
-location / {
-  content_by_lua '
-    -- foo handler
-    function foo(tokens, params)
-      ngx.say("fooooooooooooooooooooooo")
-      ngx.say("tokens:" .. table.concat(tokens, ","))
-      for key, value in pairs(params) do
-        ngx.say("param:" .. key .. "=" .. value)
-      end
-    end
-
-    -- r3router
-    local r3router = require "resty.r3";
-    local r = r3router.new({
-        {"GET",          "/",                function(t, p) ngx.say("hello r3!") end },
-        {"GET",          "/foo",             foo},
-        {{"GET","POST"}, "/foo/{id}/{name}", foo},
-    })
-
-    -- dispatcher
-    local ok = r:dispatch_ngx()
-    ---- or manual
-    ---- local ok = r:dispatch("GET", "/foo/123/999", ngx.req.get_uri_args(), ngx.req.get_post_args())
-    if ok then
-      ngx.status = 200
-    else
-      ngx.status = 404
-      ngx.print("Not found")
-    end
-  ';
-}
-```
-
-## Docker Setup
-
-```
-cd /path/to/lua-resty-r3
-docker run -p 89:80 -v "$(pwd)":/code -it toritori0318/lua-resty-r3 /opt/openresty/nginx/sbin/nginx
+         -- dispatch
+         local ok = r:dispatch(ngx.req.get_method(), "/foo/a/b")
+         if ok then
+             ngx.say("hit")
+         else
+             ngx.say("not hit")
+         end
+     }
+ }
 ```

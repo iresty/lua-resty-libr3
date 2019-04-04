@@ -19,7 +19,7 @@ __DATA__
 === TEST 1: sanity
 --- http_config eval: $::HttpConfig
 --- config
-    location = /t {
+    location /foo {
         content_by_lua_block {
             -- foo handler
             function foo(params)
@@ -45,7 +45,7 @@ __DATA__
             -- don't forget!
             r:compile()
 
-            local ok = r:dispatch("GET", "/foo/a/b", ngx.req.get_uri_args(), nil)
+            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
             if ok then
                 ngx.say("hit")
             else
@@ -54,7 +54,7 @@ __DATA__
         }
     }
 --- request
-GET /t
+GET /foo/a/b
 --- no_error_log
 [error]
 --- response_body
@@ -66,7 +66,7 @@ hit
 === TEST 2: anonymous variable
 --- http_config eval: $::HttpConfig
 --- config
-    location = /t {
+    location /foo {
         content_by_lua_block {
             -- foo handler
             function foo(params)
@@ -91,7 +91,7 @@ hit
             -- don't forget!
             r:compile()
 
-            local ok = r:dispatch("GET", "/foo/idv/namev", ngx.req.get_uri_args(), nil)
+            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
             if ok then
                 ngx.say("hit")
             else
@@ -100,7 +100,7 @@ hit
         }
     }
 --- request
-GET /t
+GET /foo/idv/namev
 --- no_error_log
 [error]
 --- response_body

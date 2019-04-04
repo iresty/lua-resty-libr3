@@ -4,10 +4,12 @@ local buf_len_prt = base.get_size_ptr()
 local new_tab = base.new_tab
 local tonumber = tonumber
 
+
 local ffi          = require "ffi"
 local ffi_cast     = ffi.cast
 local ffi_cdef     = ffi.cdef
 local ffi_string   = ffi.string
+
 
 local function load_shared_lib(so_name)
     local string_gmatch = string.gmatch
@@ -36,6 +38,7 @@ local function load_shared_lib(so_name)
 
     return nil, tried_paths
 end
+
 
 local r3, tried_paths = load_shared_lib("libr3.so")
 if not r3 then
@@ -69,6 +72,7 @@ void r3_match_entry_free(void *entry);
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
 
+
 local bit = require "bit"
 local _METHOD_GET     = 2;
 local _METHOD_POST    = bit.lshift(2,1);
@@ -77,6 +81,7 @@ local _METHOD_DELETE  = bit.lshift(2,3);
 local _METHOD_PATCH   = bit.lshift(2,4);
 local _METHOD_HEAD    = bit.lshift(2,5);
 local _METHOD_OPTIONS = bit.lshift(2,6);
+
 
 local _METHODS = {
   GET     = _METHOD_GET,
@@ -95,7 +100,7 @@ function _M.new(routes)
     local self = setmetatable({
                                 tree = r3.r3_create(route_n),
                                 match_data_index = 0,
-                                match_data = {},
+                                match_data = new_tab(route_n, 0),
                               }, mt)
 
     if not routes then return self end
@@ -131,17 +136,21 @@ function _M.new(routes)
     return self
 end
 
+
 function _M.compile(self)
     return r3.r3_compile(self.tree, nil)
 end
+
 
 function _M.tree_free(self)
     return r3.r3_free(self.tree)
 end
 
+
 function _M.r3_match_entry_free(self, entry)
     return r3.r3_match_entry_free(entry)
 end
+
 
 function _M.insert_route(self, method, path, block)
     if not method or not path or not block then return end
@@ -152,6 +161,7 @@ function _M.insert_route(self, method, path, block)
 
     r3.r3_insert(self.tree, method, path, #path, dataptr, nil)
 end
+
 
 function _M.match_route(self, method, route, ...)
     local block
@@ -207,23 +217,15 @@ function _M.get(self, path, block)
 end
 
 
-function _M.post(self, path, block)
-    self:insert_route(_METHODS["POST"], path, block)
+for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", 
+                       "OPTIONS"}) do
+    local l_name = string.lower(name)
+    _M[l_name] = function (self, ...)
+        return self:insert_route(_METHODS[name], ...)
+    end
 end
 
 
-function _M.put(self, path, block)
-    self:insert_route(_METHODS["PUT"], path, block)
-end
-
-
-function _M.delete(self, path, block)
-    self:insert_route(_METHODS["DELETE"], path, block)
-end
-
-----------------------------------------------------------------
--- dispatcher
-----------------------------------------------------------------
 function _M.dispatch(self, method, path, ...)
     return self:match_route(_METHODS[method], path, ...)
 end
