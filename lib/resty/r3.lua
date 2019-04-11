@@ -1,3 +1,5 @@
+-- Copyright (C) Yuansheng Wang
+
 local base = require "resty.core.base"
 local str_buff = base.get_string_buf(256)
 local buf_len_prt = base.get_size_ptr()
@@ -220,6 +222,7 @@ for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD",
         return insert_route(self, _METHODS[name], ...)
     end
 end
+
 
 function _M.insert_route(self, method, path, block)
     local bit_methods

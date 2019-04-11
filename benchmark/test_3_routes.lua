@@ -1,3 +1,5 @@
+-- Copyright (C) Yuansheng Wang
+
 local r3router = require "resty.r3";
 
 -- display time
