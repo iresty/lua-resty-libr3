@@ -41,7 +41,7 @@ clean:
 ### compile:      Compile library
 .PHONY: compile
 
-compile: ${R3_FOLDER} ${R3_CONGIGURE} ${R3_STATIC_LIB} $(C_SO_NAME) 
+compile: ${R3_FOLDER} ${R3_CONGIGURE} ${R3_STATIC_LIB} $(C_SO_NAME)
 
 ${OBJS} : %.o : %.c
 	$(CC) $(MY_CFLAGS) -c $<
@@ -52,18 +52,17 @@ ${C_SO_NAME} : ${OBJS}
 ${R3_FOLDER} :
 	cd deps && tar -xvf r3-2.0.tar.gz && mv r3 ../
 
-${R3_CONGIGURE} : 
+${R3_CONGIGURE} :
 	cd r3 && sh autogen.sh
 
 ${R3_STATIC_LIB} :
 	cd r3 && sh configure && make
-	
+
 
 ### install:      Install the library to runtime
 .PHONY: install
 install:
-	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/resty/r3_easy
-	$(INSTALL) lib/resty/r3_easy/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/r3_easy/
+	$(INSTALL) lib/resty/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/
 	$(INSTALL) $(C_SO_NAME) $(DESTDIR)$(LUA_LIB_DIR)
 
 ### help:         Show Makefile rules
