@@ -95,6 +95,17 @@ local _METHODS = {
 }
 
 
+local function insert_route(self, method, path, block)
+    if not method or not path or not block then return end
+
+    self.match_data_index = self.match_data_index + 1
+    self.match_data[self.match_data_index] = block
+    local dataptr = ffi_cast('void *', ffi_cast('intptr_t', self.match_data_index))
+
+    r3.r3_insert(self.tree, method, path, #path, dataptr, nil)
+end
+
+
 function _M.new(routes)
     local route_n = routes and #routes or 10
 
@@ -153,17 +164,6 @@ function _M.r3_match_entry_free(self, entry)
 end
 
 
-local function insert_route(self, method, path, block)
-    if not method or not path or not block then return end
-
-    self.match_data_index = self.match_data_index + 1
-    self.match_data[self.match_data_index] = block
-    local dataptr = ffi_cast('void *', ffi_cast('intptr_t', self.match_data_index))
-
-    r3.r3_insert(self.tree, method, path, #path, dataptr, nil)
-end
-
-
 function _M.match_route(self, method, route, ...)
     local block
     local stokens={}
@@ -196,7 +196,7 @@ function _M.match_route(self, method, route, ...)
         if key == "" then
             idx = idx + 1
             params[idx] = val
-        
+
         else
             params[key] = val
         end
@@ -213,7 +213,7 @@ end
 ----------------------------------------------------------------
 -- method
 ----------------------------------------------------------------
-for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", 
+for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD",
                        "OPTIONS"}) do
     local l_name = string.lower(name)
     _M[l_name] = function (self, ...)
