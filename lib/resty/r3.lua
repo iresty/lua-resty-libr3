@@ -224,7 +224,32 @@ for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD",
 end
 
 
-function _M.insert_route(self, method, path, block)
+function _M.insert_route(self, ...)
+    -- method, path, block
+    local nargs = select('#', ...)
+    if nargs <= 1 then
+        error("only got " .. nargs .. " but expect 2 or more", 2)
+    end
+
+    local block = select(nargs, ...)
+    if type(block) ~= "function" then
+        error("expected function but got " .. type(block), 2)
+    end
+
+    if nargs == 2 then
+        method = 0
+        path = select(1, ...)
+
+    elseif nargs == 3 then
+        method = select(1, ...)
+        path = select(2, ...)
+
+    elseif nargs == 4 then
+        host = select(1, ...)
+        method = select(2, ...)
+        path = select(3, ...)
+    end
+
     local bit_methods
     if type(method) ~= "table" then
         bit_methods = _METHODS[method] or 0

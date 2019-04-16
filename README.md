@@ -140,7 +140,7 @@ local function foo(params)
     ngx.say("foo")
 end
 
-r3:insert_route(nil, "/a", foo)
+r3:insert_route("/a", foo)
 r3:insert_route({"GET", "POST"}, "/a", foo)
 r3:insert_route({"GET"}, "/a", foo)
 ```
