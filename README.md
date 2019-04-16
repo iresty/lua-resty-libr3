@@ -1,20 +1,45 @@
-lua-resty-r3
-================
+Name
+====
 
-[libr3](https://github.com/c9s/r3) Lua-Openresty implementation.
+This is Lua-Openresty implementation library base on FFI for libr3.
+
+https://github.com/c9s/r3
+
+Table of Contents
+=================
+
+* [Name](#name)
+* [Status](#status)
+* [Description](#description)
+* [Methods](#methods)
+    * [new](#new)
+    * [add_router](#add_router)
+    * [compile](#compile)
+    * [dispatch](#dispatch)
+
+Status
+======
 
 **This repository is an experimental.**
 
+Description
+===========
+
 ## Install
 
-### libr3
+### Dependent library
 
-[See.](https://github.com/c9s/r3#install)
+```shell
+# ubuntu
+sudo apt-get install check libpcre3 libpcre3-dev libjemalloc-dev libjemalloc1 build-essential libtool automake autoconf pkg-config
+```
 
-### lua-resty-r3
+### Compile and install
 
 ```
-luarocks install https://raw.githubusercontent.com/membphis/lua-resty-r3/master/lua-resty-r3.rockspec
+make compile
+make
+sudo make install
 ```
 
 ## SYNOPSYS
@@ -23,33 +48,124 @@ luarocks install https://raw.githubusercontent.com/membphis/lua-resty-r3/master/
  location / {
      content_by_lua_block {
          -- r3 router
-         local r3router = require "resty.r3";
-         local r = r3router.new() 
-
+         local r3 = require("resty.r3").new();
          local encode_json = require("cjson.safe").encode
 
          function foo(params) -- foo handler
              ngx.say("foo: ", encode_json(params))
          end
-         function bar(params)
-             ngx.say("bar: ", encode_json(params))
-         end 
 
          -- routing
-         r:get("/foo", bar)
-         r:get("/foo/{id}/{name}", foo)
-         r:post("/foo/{id}/{name}", bar) 
+         r3:get("/foo/{id}/{name}", foo)
 
-         -- don't forget!
-         r:compile() 
+         -- don't forget!!!
+         r3:compile()
 
          -- dispatch
-         local ok = r:dispatch(ngx.req.get_method(), "/foo/a/b")
-         if ok then
-             ngx.say("hit")
-         else
-             ngx.say("not hit")
+         local ok = r3:dispatch(ngx.req.get_method(), "/foo/a/b")
+         if not ok then
+             ngx.exit(404)
          end
      }
  }
 ```
+
+[Back to TOC](#table-of-contents)
+
+Methods
+=======
+
+new
+---
+
+`syntax: r3, err = r3router:new()`
+
+Creates a r3 object. In case of failures, returns `nil` and a string describing the error.
+
+`syntax: r3, err = r3router:new(routes)`
+
+The routes is a array table, like `{ {methods, uri, callback} }`.
+
+    * methods: It's an array table, we can put one or more method names together. Here is the valid method name: "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS".
+    * uri: Client request uri.
+    * callback: Lua callback function.
+
+Example:
+
+```lua
+-- foo handler
+function foo(params)
+    ngx.say("foo: ", require("cjson").encode(params))
+end
+
+local r3route = require "resty.r3"
+local r3 = r3route.new({
+    {{"GET"}, [[/foo/{:\w+}/{:\w+}]], foo}
+})
+```
+
+[Back to TOC](#table-of-contents)
+
+
+add_router
+----------
+
+We can add a router by specifying a lowercase method name.
+
+Valid method name list: `get`, `post`, `put`, `delete`, `patch`, `head`, `options`.
+
+```lua
+-- route
+local function foo(params)
+    ngx.say("foo")
+end
+
+r3:get("/a", foo)
+r3:post("/b", foo)
+r3:put("/c", foo)
+r3:delete("/d", foo)
+```
+
+`syntax: r3, err = r3:insert_route(methods, uri, callback)`
+
+The routes is a array table, like `{ {methods, uri, callback} }`.
+
+    * methods: It's an array table, we can put one or more method names together. If there was no method limit, we can use `nil` value.
+    * uri: Client request uri.
+    * callback: Lua callback function.
+
+```lua
+-- route
+local function foo(params)
+    ngx.say("foo")
+end
+
+r3:insert_route(nil, "/a", foo)
+r3:insert_route({"GET", "POST"}, "/a", foo)
+r3:insert_route({"GET"}, "/a", foo)
+```
+
+[Back to TOC](#table-of-contents)
+
+compile
+-------
+
+`syntax: r3:compile()`
+
+It compiles our route paths into a prefix tree (trie). You must compile after adding all routes, otherwise it may fail to match.
+
+[Back to TOC](#table-of-contents)
+
+
+dispatch
+--------
+
+`syntax: ok = r3:dispatch(method, uri)`
+
+Dispatchs the path to the controller by `method` and `uri`.
+
+```lua
+local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
+```
+
+[Back to TOC](#table-of-contents)

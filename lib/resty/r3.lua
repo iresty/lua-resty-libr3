@@ -129,7 +129,7 @@ function _M.new(routes)
 
         local bit_methods
         if type(method) ~= "table" then
-            bit_methods = _METHODS[method]
+            bit_methods = _METHODS[method] or 0
 
         else
             bit_methods = 0
@@ -227,7 +227,7 @@ end
 function _M.insert_route(self, method, path, block)
     local bit_methods
     if type(method) ~= "table" then
-        bit_methods = _METHODS[method]
+        bit_methods = _METHODS[method] or 0
 
     else
         bit_methods = 0

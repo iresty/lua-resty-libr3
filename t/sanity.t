@@ -30,11 +30,11 @@ __DATA__
             end
 
             -- r3 router
-            local r3router = require "resty.r3";
+            local r3router = require "resty.r3"
             local r = r3router.new()
 
-            -- routing
-            r:get("/", function(tokens, params)
+            -- insert route
+            r:get("/", function(params)
             ngx.say("hello r3!")
             end)
 
@@ -77,16 +77,127 @@ hit
             end
 
             -- r3 router
-            local r3router = require "resty.r3";
+            local r3router = require "resty.r3"
             local r = r3router.new()
 
-            -- routing
-            r:get("/", function(tokens, params)
+            -- insert route
+            r:get("/", function(params)
             ngx.say("hello r3!")
             end)
 
             r:get("/foo", bar)
             r:get([[/foo/{:\w+}/{:\w+}]], foo)
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- no_error_log
+[error]
+--- response_body
+foo: ["idv","namev"]
+hit
+
+
+
+=== TEST 3: create r3 object with arguments
+--- http_config eval: $::HttpConfig
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {{"GET"}, [[/foo/{:\w+}/{:\w+}]], foo}
+            })
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- no_error_log
+[error]
+--- response_body
+foo: ["idv","namev"]
+hit
+
+
+
+=== TEST 4: create r3 object with arguments (no method)
+--- http_config eval: $::HttpConfig
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {nil, [[/foo/{:\w+}/{:\w+}]], foo}
+            })
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- no_error_log
+[error]
+--- response_body
+foo: ["idv","namev"]
+hit
+
+
+
+=== TEST 5: insert router
+--- http_config eval: $::HttpConfig
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            r:insert_route(nil, [[/foo/{:\w+}/{:\w+}]], foo)
 
             -- don't forget!
             r:compile()
