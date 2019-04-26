@@ -1,5 +1,3 @@
-Name
-====
 
 This is Lua-Openresty implementation library base on FFI for libr3.
 
