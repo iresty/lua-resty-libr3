@@ -1,5 +1,3 @@
-OPENRESTY_PREFIX=/usr/local/openresty-debug
-
 PREFIX ?=          /usr/local
 LUA_INCLUDE_DIR ?= $(PREFIX)/include
 LUA_LIB_DIR ?=     $(PREFIX)/lualib/$(LUA_VERSION)
