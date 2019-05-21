@@ -217,3 +217,32 @@ GET /foo/idv/namev
 --- response_body
 foo: ["idv","namev"]
 hit
+
+
+
+=== TEST 6: free
+--- http_config eval: $::HttpConfig
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            r:free()
+            r:free()  -- double free
+
+            ngx.say("all done")
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- no_error_log
+[error]
+--- response_body
+all done

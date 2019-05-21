@@ -19,7 +19,6 @@ local function load_shared_lib(so_name)
     local string_match = string.match
     local io_open = io.open
     local io_close = io.close
-    local new_tab = require "table.new"
 
     local cpath = package.cpath
     local tried_paths = new_tab(32, 0)
@@ -73,7 +72,23 @@ void r3_match_entry_free(void *entry);
 
 
 local _M = { _VERSION = '0.01' }
-local mt = { __index = _M }
+
+
+-- only work under lua51 or luajit
+local function setmt__gc(t, mt)
+    local prox = newproxy(true)
+    getmetatable(prox).__gc = function() mt.__gc(t) end
+    t[prox] = true
+    return setmetatable(t, mt)
+end
+
+
+local function gc_free(self)
+    self:free()
+end
+
+
+local mt = { __index = _M, __gc = gc_free }
 
 
 local bit = require "bit"
@@ -111,11 +126,11 @@ end
 function _M.new(routes)
     local route_n = routes and #routes or 10
 
-    local self = setmetatable({
-                                tree = r3.r3_create(route_n),
-                                match_data_index = 0,
-                                match_data = new_tab(route_n, 0),
-                              }, mt)
+    local self = setmt__gc({
+                            tree = r3.r3_create(route_n),
+                            match_data_index = 0,
+                            match_data = new_tab(route_n, 0),
+                            }, mt)
 
     if not routes then return self end
 
@@ -156,24 +171,23 @@ function _M.compile(self)
 end
 
 
-function _M.tree_free(self)
-    return r3.r3_free(self.tree)
-end
+function _M.free(self)
+    if not self.tree then
+        return
+    end
 
-
-function _M.r3_match_entry_free(self, entry)
-    return r3.r3_match_entry_free(entry)
+    r3.r3_free(self.tree)
+    self.tree = nil
 end
 
 
 function _M.match_route(self, method, route, ...)
     local block
-    local stokens={}
 
     local entry = r3.r3_match_entry_create(route, method)
     local match_route = r3.r3_match_route(self.tree, entry)
     if match_route == nil then
-        self:r3_match_entry_free(entry);
+        r3.r3_match_entry_free(entry)
         return false
     end
 
@@ -187,7 +201,8 @@ function _M.match_route(self, method, route, ...)
     buf_len_prt[0] = 0
     local cnt = r3.r3_match_entry_fetch_slugs(entry, 0, nil, buf_len_prt)
     local params = new_tab(0, cnt)
-    local idx = 0
+
+    idx = 0
     for i = 0, cnt - 1 do
         r3.r3_match_entry_fetch_slugs(entry, i, str_buff, buf_len_prt)
         local key = ffi_string(str_buff, buf_len_prt[0])
@@ -205,7 +220,7 @@ function _M.match_route(self, method, route, ...)
     end
 
     -- free
-    self:r3_match_entry_free(entry)
+    r3.r3_match_entry_free(entry)
 
     -- execute block
     block(params, ...)
@@ -236,6 +251,7 @@ function _M.insert_route(self, ...)
         error("expected function but got " .. type(block), 2)
     end
 
+    local method, path
     if nargs == 2 then
         method = 0
         path = select(1, ...)
@@ -245,7 +261,7 @@ function _M.insert_route(self, ...)
         path = select(2, ...)
 
     elseif nargs == 4 then
-        host = select(1, ...)
+        -- host = select(1, ...)
         method = select(2, ...)
         path = select(3, ...)
     end
