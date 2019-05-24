@@ -10,39 +10,21 @@ Table of Contents
 
 * [Name](#name)
 * [Status](#status)
-* [Description](#description)
+* [Synopsys](#synopsys)
 * [Methods](#methods)
     * [new](#new)
     * [add_router](#add_router)
     * [compile](#compile)
     * [dispatch](#dispatch)
+* [Install](#install)
 
 Status
 ======
 
 **This repository is an experimental.**
 
-Description
-===========
-
-## Install
-
-### Dependent library
-
-```shell
-# ubuntu
-sudo apt-get install check libpcre3 libpcre3-dev libjemalloc-dev libjemalloc1 build-essential libtool automake autoconf pkg-config
-```
-
-### Compile and install
-
-```
-make compile
-make
-sudo make install
-```
-
-## SYNOPSYS
+Synopsys
+========
 
 ```lua
  location / {
@@ -169,3 +151,21 @@ local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
 ```
 
 [Back to TOC](#table-of-contents)
+
+Install
+=======
+
+### Dependent library
+
+```shell
+# ubuntu
+sudo apt-get install check libpcre3 libpcre3-dev libjemalloc-dev libjemalloc1 build-essential libtool automake autoconf pkg-config
+```
+
+### Compile and install
+
+```
+make compile
+make
+sudo make install
+```
