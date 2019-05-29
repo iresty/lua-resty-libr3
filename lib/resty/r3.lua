@@ -192,10 +192,10 @@ function _M.free(self)
 end
 
 
-function _M.match_route(self, method, route, ...)
+function _M.match_route(self, method, uri, ...)
     local block
 
-    local entry = r3.r3_match_entry_create(route, method)
+    local entry = r3.r3_match_entry_create(uri, method)
     local match_route = r3.r3_match_route(self.tree, entry)
     if match_route == nil then
         r3.r3_match_entry_free(entry)
