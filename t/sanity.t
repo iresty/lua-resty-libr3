@@ -246,3 +246,54 @@ GET /foo/idv/namev
 [error]
 --- response_body
 all done
+
+
+
+=== TEST 7: no pattern
+--- http_config eval: $::HttpConfig
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+            function bar(params)
+                ngx.say("bar: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            -- insert route
+            r:get("/foo", foo)
+            r:get("/bar", bar)
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+
+            ok = r:dispatch(ngx.req.get_method(), "/bar")
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo
+--- no_error_log
+[error]
+--- response_body
+foo: {}
+hit
+bar: {}
+hit

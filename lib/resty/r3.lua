@@ -4,6 +4,7 @@ local base = require "resty.core.base"
 local str_buff = base.get_string_buf(256)
 local buf_len_prt = base.get_size_ptr()
 local new_tab = base.new_tab
+local find_str = string.find
 local tonumber = tonumber
 local ipairs = ipairs
 
@@ -112,14 +113,24 @@ local _METHODS = {
 }
 
 
-local function insert_route(self, method, path, block)
-    if not method or not path or not block then return end
+local function insert_route(self, method, uri, block)
+    if not method or not uri or not block then
+        return
+    end
+
+    if not find_str(uri, [[{]], 1, true) then
+        self.hash[uri] = {
+            bit_methods = method,
+            handler = block,
+        }
+        return
+    end
 
     self.match_data_index = self.match_data_index + 1
     self.match_data[self.match_data_index] = block
     local dataptr = ffi_cast('void *', ffi_cast('intptr_t', self.match_data_index))
 
-    r3.r3_insert(self.tree, method, path, #path, dataptr, nil)
+    r3.r3_insert(self.tree, method, uri, #uri, dataptr, nil)
 end
 
 
@@ -128,6 +139,7 @@ function _M.new(routes)
 
     local self = setmt__gc({
                             tree = r3.r3_create(route_n),
+                            hash = new_tab(0, route_n),
                             match_data_index = 0,
                             match_data = new_tab(route_n, 0),
                             }, mt)
@@ -139,7 +151,7 @@ function _M.new(routes)
         local route = routes[i]
 
         local method  = route[1]
-        local path    = route[2]
+        local uri     = route[2]
         local handler = route[3]
 
         local bit_methods
@@ -153,8 +165,7 @@ function _M.new(routes)
             end
         end
 
-        -- register
-        insert_route(self, bit_methods, path, handler)
+        insert_route(self, bit_methods, uri, handler)
     end
 
     -- compile
@@ -281,8 +292,17 @@ function _M.insert_route(self, ...)
 end
 
 
-function _M.dispatch(self, method, path, ...)
-    return self:match_route(_METHODS[method], path, ...)
+function _M.dispatch(self, method, uri, ...)
+    if self.hash[uri] then
+        local item = self.hash[uri]
+        if item.bit_methods == 0
+           or bit.band(item.bit_methods, _METHODS[method]) > 0 then
+            item.handler({}, ...)
+            return true
+        end
+    end
+
+    return self:match_route(_METHODS[method], uri, ...)
 end
 
 
