@@ -1,6 +1,6 @@
-PREFIX ?=          /usr/local
-LUA_INCLUDE_DIR ?= $(PREFIX)/include
-LUA_LIB_DIR ?=     $(PREFIX)/lualib/$(LUA_VERSION)
+INST_PREFIX ?= /usr
+INST_LIBDIR ?= $(INST_PREFIX)/lib64/lua/5.1
+INST_LUADIR ?= $(INST_PREFIX)/share/lua/5.1
 INSTALL ?= install
 
 C_SO_NAME := libr3.so
@@ -60,8 +60,9 @@ ${R3_STATIC_LIB} :
 ### install:      Install the library to runtime
 .PHONY: install
 install:
-	$(INSTALL) lib/resty/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/
-	$(INSTALL) $(C_SO_NAME) $(DESTDIR)$(LUA_LIB_DIR)
+	$(INSTALL) -d $(INST_LUADIR)/resty/
+	$(INSTALL) lib/resty/*.lua $(INST_LUADIR)/resty/
+	$(INSTALL) $(C_SO_NAME) $(INST_LIBDIR)/
 
 ### help:         Show Makefile rules
 .PHONY: help
