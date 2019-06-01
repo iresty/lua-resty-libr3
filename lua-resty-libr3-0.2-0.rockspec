@@ -1,19 +1,15 @@
 package = "lua-resty-libr3"
-version = "0.1-0"
+version = "0.2-0"
 source = {
    url = "git://github.com/iresty/lua-resty-libr3",
-   tag = "v0.1",
+   tag = "v0.2",
 }
 
 description = {
-   summary = "This is a libr3 implementation library base on FFI for Lua-Openresty",
+   summary = "This is a libr3 implementation base on FFI for Lua-Openresty",
    homepage = "https://github.com/iresty/lua-resty-libr3",
    license = "Apache License 2.0",
    maintainer = "Yuansheng Wang <membphis@gmail.com>"
-}
-
-dependencies = {
-   "lua = 5.1",
 }
 
 build = {
