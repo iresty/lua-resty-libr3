@@ -19,7 +19,7 @@ MY_CFLAGS := $(CFLAGS) -DBUILDING_SO
 MY_LDFLAGS := $(LDFLAGS) -fvisibility=hidden
 
 OBJS := r3_resty.o
-R3_FOLDER := r3-2.0
+R3_FOLDER := r3
 R3_CONGIGURE := $(R3_FOLDER)/configure
 R3_STATIC_LIB := $(R3_FOLDER)/.libs/libr3.a
 
@@ -52,7 +52,7 @@ ${C_SO_NAME} : ${OBJS}
 	$(CC) $(MY_LDFLAGS) $(OBJS) $(R3_FOLDER)/.libs/libr3.a -o $@
 
 ${R3_FOLDER} :
-	cp -r deps/$(R3_FOLDER) ./
+	cp -r deps/$(R3_FOLDER)-2.0 ./ && mv $(R3_FOLDER)-2.0 $(R3_FOLDER)
 
 ${R3_CONGIGURE} :
 	cd $(R3_FOLDER) && ./autogen.sh
