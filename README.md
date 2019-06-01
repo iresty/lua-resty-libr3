@@ -159,13 +159,13 @@ Install
 
 ```shell
 # ubuntu
-sudo apt-get install check libpcre3 libpcre3-dev libjemalloc-dev libjemalloc1 build-essential libtool automake autoconf pkg-config
+sudo apt-get install check libpcre3 libpcre3-dev build-essential libtool \
+    automake autoconf pkg-config
 ```
 
 ### Compile and install
 
 ```
-make compile
-make
+make UNAME=`uname`
 sudo make install
 ```

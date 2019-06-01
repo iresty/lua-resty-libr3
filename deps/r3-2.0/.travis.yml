@@ -1,0 +1,70 @@
+language: c
+sudo: required
+
+services:
+  - docker
+
+git:
+  depth: 1
+
+matrix:
+  include:
+  - compiler: gcc
+    env:
+    - TYPE=autotools
+    - CONFIGURE_OPTION='--enable-debug --enable-gcov --with-malloc=jemalloc'
+    - COVERALLS=yes
+    - VALGRIND=no
+    - DEBUG=yes
+    - CC=gcc
+    - CXX=g++
+  - compiler: gcc
+    env:
+    - TYPE=autotools
+    - CONFIGURE_OPTION='--enable-debug --enable-gcov'
+    - COVERALLS=yes
+    - VALGRIND=yes
+    - DEBUG=yes
+    - CC=gcc
+    - CXX=g++
+  - compiler: clang
+    env:
+    - TYPE=autotools
+    - CONFIGURE_OPTION='--enable-debug --enable-gcov'
+    - COVERALLS=yes
+    - VALGRIND=yes
+    - DEBUG=yes
+    - CC=clang
+    - CXX=clang++
+  - compiler: gcc
+    env:
+    - TYPE=cmake
+    - CONFIGURE_OPTION='--enable-debug --enable-gcov'
+    - COVERALLS=yes
+    - VALGRIND=yes
+    - DEBUG=yes
+    - CC=gcc
+    - CXX=g++
+
+before_install:
+  - docker run -d
+    --name build
+    -v $(pwd):/travis
+    -e "CONFIGURE_OPTION=$CONFIGURE_OPTION"
+    -e "COVERALLS=$COVERALLS"
+    -e "VALGRIND=$VALGRIND"
+    -e "DEBUG=$DEBUG"
+    -e "CC=$CC"
+    -e "CXX=$CXX"
+    ubuntu:16.04
+    tail -f /dev/null
+  - docker ps
+
+install:
+  - docker exec -t build bash -c "cd /travis && .travis-ci/install.sh"
+
+script:
+  - docker exec -t build bash -c "cd /travis && .travis-ci/script-$TYPE.sh"
+
+after_success:
+  - docker exec -t build bash -c "cd /travis && .travis-ci/after_success.sh"

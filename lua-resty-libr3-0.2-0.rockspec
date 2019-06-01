@@ -1,8 +1,8 @@
 package = "lua-resty-libr3"
-version = "0.1-0"
+version = "0.2-0"
 source = {
    url = "git://github.com/iresty/lua-resty-libr3",
-   tag = "v0.1",
+   tag = "v0.2",
 }
 
 description = {
@@ -13,7 +13,7 @@ description = {
 }
 
 dependencies = {
-   "lua = 5.1",
+   "lua >= 5.1",
 }
 
 build = {
