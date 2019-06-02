@@ -1,5 +1,5 @@
 INST_PREFIX ?= /usr
-INST_LIBDIR ?= $(INST_PREFIX)/lib64/lua/5.1
+INST_LIBDIR ?= $(INST_PREFIX)/lib/lua/5.1
 INST_LUADIR ?= $(INST_PREFIX)/share/lua/5.1
 INSTALL ?= install
 UNAME ?= $(shell uname)
