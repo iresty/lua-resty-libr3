@@ -2,15 +2,17 @@ INST_PREFIX ?= /usr
 INST_LIBDIR ?= $(INST_PREFIX)/lib64/lua/5.1
 INST_LUADIR ?= $(INST_PREFIX)/share/lua/5.1
 INSTALL ?= install
+UNAME ?= $(shell uname)
 
 C_SO_NAME := libr3.so
 
 CFLAGS := -O3 -g -Wall -fpic
 
 LDFLAGS := -shared
-ifeq ($(UNAME), Darwin)
-	# on Mac OS X, one should set instead:
-	# for Mac OS X environment, use one of options
+
+# on Mac OS X, one should set instead:
+# for Mac OS X environment, use one of options
+ifeq ($(UNAME),Darwin)
 	LDFLAGS := -bundle -undefined dynamic_lookup
 	C_SO_NAME := libr3.dylib
 endif
