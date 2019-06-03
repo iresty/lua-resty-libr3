@@ -1,6 +1,6 @@
 Name
 ====
-This is Lua-Openresty implementation library base on FFI for (libr3)[https://github.com/c9s/r3].
+This is Lua-Openresty implementation library base on FFI for [libr3](https://github.com/c9s/r3).
 
 [![Build Status](https://travis-ci.org/iresty/lua-resty-libr3.svg?branch=master)](https://travis-ci.org/iresty/lua-resty-libr3)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/iresty/lua-resty-libr3/blob/master/LICENSE)
