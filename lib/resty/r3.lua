@@ -43,10 +43,16 @@ local function load_shared_lib(so_name)
 end
 
 
-local r3, tried_paths = load_shared_lib("libr3.so")
+local lib_name = "libr3.so"
+if ffi.os == "OSX" then
+    lib_name = "libr3.dylib"
+end
+
+
+local r3, tried_paths = load_shared_lib(lib_name)
 if not r3 then
     tried_paths[#tried_paths + 1] = 'tried above paths but can not load '
-                                    .. 'libr3.so'
+                                    .. lib_name
     error(table.concat(tried_paths, '\r\n', 1, #tried_paths))
 end
 
