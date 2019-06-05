@@ -298,17 +298,24 @@ function _M.insert_route(self, ...)
 end
 
 
-function _M.dispatch(self, method, uri, ...)
+local function dispatch2(self, params, method, uri, ...)
     if self.hash[uri] then
-        local item = self.hash[uri]
-        if item.bit_methods == 0
-           or bit.band(item.bit_methods, _METHODS[method]) > 0 then
-            item.handler({}, ...)
+        local route = self.hash[uri]
+        if route.bit_methods == 0
+           or bit.band(route.bit_methods, _METHODS[method]) > 0 then
+            route.handler(params, ...)
             return true
         end
     end
 
     return self:match_route(_METHODS[method], uri, ...)
+end
+_M.dispatch2 = dispatch2
+
+
+function _M.dispatch(self, method, uri, ...)
+    -- use dispatch2 is better, avoid temporary table
+    return dispatch2(self, {}, method, uri, ...)
 end
 
 

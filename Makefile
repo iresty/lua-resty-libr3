@@ -4,10 +4,9 @@ INST_LUADIR ?= $(INST_PREFIX)/share/lua/5.1
 INSTALL ?= install
 UNAME ?= $(shell uname)
 
-C_SO_NAME := libr3.so
-
 CFLAGS := -O3 -g -Wall -fpic
 
+C_SO_NAME := libr3.so
 LDFLAGS := -shared
 
 # on Mac OS X, one should set instead:

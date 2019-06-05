@@ -297,3 +297,44 @@ foo: {}
 hit
 bar: {}
 hit
+
+
+
+=== TEST 8: method dispatch2, specified a table to store the parameter
+--- http_config eval: $::HttpConfig
+--- config
+    location /t {
+        content_by_lua_block {
+            -- foo handler
+            local bar_param_tab
+            function bar(params)
+                bar_param_tab = params
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {{"GET"}, "/bar", bar},
+            })
+
+            r:compile()
+
+            local param_tab = {}
+            local ok = r:dispatch2(param_tab, ngx.req.get_method(),
+                                   "/bar")
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+
+            ngx.say("passed parameter table: ", param_tab == bar_param_tab)
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+hit
+passed parameter table: true

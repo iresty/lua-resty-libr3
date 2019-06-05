@@ -16,6 +16,7 @@ Table of Contents
     * [add_router](#add_router)
     * [compile](#compile)
     * [dispatch](#dispatch)
+    * [dispatch2](#dispatch2)
 * [Install](#install)
 
 Status
@@ -152,6 +153,16 @@ local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
 
 [Back to TOC](#table-of-contents)
 
+dispatch2
+---------
+
+`syntax: ok = r3:dispatch2(param_tab, method, uri)`
+
+Basically the same as `dispatch`, support for passing in a `table` object to
+store parsing parameters, makes it easier to reuse lua table.
+
+[Back to TOC](#table-of-contents)
+
 Install
 =======
 
@@ -166,6 +177,5 @@ sudo apt-get install check libpcre3 libpcre3-dev build-essential libtool \
 ### Compile and install
 
 ```
-make UNAME=`uname`
 sudo make install
 ```
