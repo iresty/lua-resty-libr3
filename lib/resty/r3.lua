@@ -1,18 +1,18 @@
 -- Copyright (C) Yuansheng Wang
 
-local base = require "resty.core.base"
-local str_buff = base.get_string_buf(256)
+local base        = require("resty.core.base")
+local clear_tab   = require("table.clear")
+local str_buff    = base.get_string_buf(256)
 local buf_len_prt = base.get_size_ptr()
-local new_tab = base.new_tab
-local find_str = string.find
-local tonumber = tonumber
-local ipairs = ipairs
-
-
-local ffi          = require "ffi"
-local ffi_cast     = ffi.cast
-local ffi_cdef     = ffi.cdef
-local ffi_string   = ffi.string
+local new_tab     = base.new_tab
+local find_str    = string.find
+local tonumber    = tonumber
+local ipairs      = ipairs
+local ffi         = require "ffi"
+local ffi_cast    = ffi.cast
+local ffi_cdef    = ffi.cdef
+local ffi_string  = ffi.string
+local insert_tab  = table.insert
 
 
 local function load_shared_lib(so_name)
@@ -65,7 +65,10 @@ void *r3_insert(void *tree, int method, const char *path,
     int path_len, void *data, char **errstr);
 int r3_compile(void *tree, char** errstr);
 
-void *r3_match_entry_create(const char *path, int method);
+int r3_route_set_host(void *router, const char *host);
+int r3_route_attribute_free(void *router);
+
+void *r3_match_entry_create(const char *path, int method, const char *host);
 void *r3_match_route(const void *tree, void *entry);
 void *r3_match_route_fetch_idx(void *route);
 
@@ -91,6 +94,11 @@ end
 
 
 local function gc_free(self)
+    for _, r3_node in ipairs(self.r3_nodes) do
+        r3.r3_route_attribute_free(r3_node)
+    end
+
+    clear_tab(self.r3_nodes)
     self:free()
 end
 
@@ -119,24 +127,41 @@ local _METHODS = {
 }
 
 
-local function insert_route(self, method, uri, block)
-    if not method or not uri or not block then
-        return
+local route_opts = {}
+local function insert_route(self, opts)
+    local method = opts.method
+    local uri = opts.uri
+    local host = opts.host
+    local handler = opts.handler
+    if not method or not uri or not handler then
+        return nil, "invalid argument of route"
     end
 
     if not find_str(uri, [[{]], 1, true) then
-        self.hash[uri] = {
+        self.hash_uri[uri] = {
             bit_methods = method,
-            handler = block,
+            host = host,
+            handler = handler,
         }
-        return
+        return true
     end
 
     self.match_data_index = self.match_data_index + 1
-    self.match_data[self.match_data_index] = block
-    local dataptr = ffi_cast('void *', ffi_cast('intptr_t', self.match_data_index))
+    self.match_data[self.match_data_index] = handler
+    local dataptr = ffi_cast('void *',
+                             ffi_cast('intptr_t', self.match_data_index))
 
-    r3.r3_insert(self.tree, method, uri, #uri, dataptr, nil)
+    local r3_node = r3.r3_insert(self.tree, method, uri, #uri, dataptr, nil)
+    if host then
+        local ret = r3.r3_route_set_host(r3_node, host)
+        if ret == -1 then
+            return nil, "failed to set the host for route"
+        end
+
+        insert_tab(self.r3_nodes, r3_node)
+    end
+
+    return r3_node
 end
 
 
@@ -145,7 +170,8 @@ function _M.new(routes)
 
     local self = setmt__gc({
                             tree = r3.r3_create(route_n),
-                            hash = new_tab(0, route_n),
+                            hash_uri = new_tab(0, route_n),
+                            r3_nodes = new_tab(128, 0),
                             match_data_index = 0,
                             match_data = new_tab(route_n, 0),
                             }, mt)
@@ -156,9 +182,7 @@ function _M.new(routes)
     for i = 1, route_n do
         local route = routes[i]
 
-        local method  = route[1]
-        local uri     = route[2]
-        local handler = route[3]
+        local method  = route.method
 
         local bit_methods
         if type(method) ~= "table" then
@@ -171,12 +195,12 @@ function _M.new(routes)
             end
         end
 
-        insert_route(self, bit_methods, uri, handler)
-    end
-
-    -- compile
-    if self.match_data_index > 0 then
-      self:compile()
+        clear_tab(route_opts)
+        route_opts.method  = bit_methods
+        route_opts.uri     = route.uri
+        route_opts.host    = route.host
+        route_opts.handler = route.handler
+        insert_route(self, route_opts)
     end
 
     return self
@@ -198,10 +222,11 @@ function _M.free(self)
 end
 
 
-function _M.match_route(self, method, uri, ...)
-    local block
+function _M.match_route(self, uri, opts, ...)
+    local method = opts.method
+    method = _METHODS[method] or 0
 
-    local entry = r3.r3_match_entry_create(uri, method)
+    local entry = r3.r3_match_entry_create(uri, method, opts.host)
     local match_route = r3.r3_match_route(self.tree, entry)
     if match_route == nil then
         r3.r3_match_entry_free(entry)
@@ -212,7 +237,7 @@ function _M.match_route(self, method, uri, ...)
 
     -- get match data from index
     local idx = tonumber(ffi_cast('intptr_t', ffi_cast('void *', data_idx)))
-    block = self.match_data[idx]
+    local block = self.match_data[idx]
 
     -- todo: fetch tokers and slugs information
     buf_len_prt[0] = 0
@@ -250,37 +275,44 @@ end
 for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD",
                        "OPTIONS"}) do
     local l_name = string.lower(name)
-    _M[l_name] = function (self, ...)
-        return insert_route(self, _METHODS[name], ...)
+    _M[l_name] = function (self, uri, handler)
+        clear_tab(route_opts)
+        route_opts.method = _METHODS[name]
+        route_opts.uri = uri
+        route_opts.handler = handler
+        return insert_route(self, route_opts)
     end
 end
 
 
 function _M.insert_route(self, ...)
-    -- method, path, block
+    -- method, path, handler
     local nargs = select('#', ...)
     if nargs <= 1 then
         error("only got " .. nargs .. " but expect 2 or more", 2)
     end
 
-    local block = select(nargs, ...)
-    if type(block) ~= "function" then
-        error("expected function but got " .. type(block), 2)
+    local handler = select(nargs, ...)
+    if type(handler) ~= "function" then
+        error("expected function but got " .. type(handler), 2)
     end
 
-    local method, path
+    local method, uri, host
     if nargs == 2 then
-        method = 0
-        path = select(1, ...)
+        local uri_or_opts = select(1, ...)
+        if type(uri_or_opts) == "table" then
+            local opts = uri_or_opts
+            method = opts.method
+            uri    = opts.uri
+            host   = opts.host
+        else
+            method = 0
+            uri = uri_or_opts
+        end
 
     elseif nargs == 3 then
         method = select(1, ...)
-        path = select(2, ...)
-
-    elseif nargs == 4 then
-        -- host = select(1, ...)
-        method = select(2, ...)
-        path = select(3, ...)
+        uri = select(2, ...)
     end
 
     local bit_methods
@@ -294,28 +326,54 @@ function _M.insert_route(self, ...)
         end
     end
 
-    return insert_route(self, bit_methods, path, block)
+    clear_tab(route_opts)
+    route_opts.method = bit_methods
+    route_opts.uri = uri
+    route_opts.host = host
+    route_opts.handler = handler
+    return insert_route(self, route_opts)
 end
 
 
-local function dispatch2(self, params, method, uri, ...)
-    if self.hash[uri] then
-        local route = self.hash[uri]
-        if route.bit_methods == 0
-           or bit.band(route.bit_methods, _METHODS[method]) > 0 then
-            route.handler(params, ...)
-            return true
-        end
+local opts_method = {}
+local function dispatch2(self, params, uri, method_or_opts, ...)
+    local opts = method_or_opts
+    if type(method_or_opts) == "string" then
+        opts_method.method = method_or_opts
+        opts = opts_method
     end
 
-    return self:match_route(_METHODS[method], uri, ...)
+    if self.hash_uri[uri] then
+        local method = opts and opts.method
+        local route = self.hash_uri[uri]
+        if route.bit_methods ~= 0 and
+           bit.band(route.bit_methods, _METHODS[method]) == 0 then
+            return false
+        end
+
+        if route.host and route.host ~= opts.host then
+            return false
+        end
+
+        route.handler(params, ...)
+        return true
+    end
+
+    return self:match_route(uri, opts, ...)
 end
 _M.dispatch2 = dispatch2
 
 
-function _M.dispatch(self, method, uri, ...)
+
+function _M.dispatch(self, uri, method_or_opts, ...)
     -- use dispatch2 is better, avoid temporary table
-    return dispatch2(self, {}, method, uri, ...)
+    local opts = method_or_opts
+    if type(method_or_opts) == "string" then
+        opts_method.method = method_or_opts
+        opts = opts_method
+    end
+
+    return dispatch2(self, {}, uri, opts, ...)
 end
 
 

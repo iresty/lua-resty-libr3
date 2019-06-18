@@ -1,12 +1,9 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+use Test::Nginx::Socket::Lua 'no_plan';
 
 log_level('warn');
-
-repeat_each(2);
-
-plan tests => repeat_each() * (blocks() * 3);
+repeat_each(5);
 
 our $HttpConfig = <<'_EOC_';
     lua_package_path 'lib/?.lua;;';
@@ -22,10 +19,10 @@ __DATA__
     location /foo {
         content_by_lua_block {
             -- foo handler
-            function foo(params)
+            local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
-            function bar(params)
+            local function bar(params)
                 ngx.say("bar: ", require("cjson").encode(params))
             end
 
@@ -35,7 +32,7 @@ __DATA__
 
             -- insert route
             r:get("/", function(params)
-            ngx.say("hello r3!")
+                ngx.say("hello r3!")
             end)
 
             r:get("/foo", bar)
@@ -45,7 +42,7 @@ __DATA__
             -- don't forget!
             r:compile()
 
-            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else
@@ -69,10 +66,10 @@ hit
     location /foo {
         content_by_lua_block {
             -- foo handler
-            function foo(params)
+            local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
-            function bar(params)
+            local function bar(params)
                 ngx.say("bar: ", require("cjson").encode(params))
             end
 
@@ -82,16 +79,15 @@ hit
 
             -- insert route
             r:get("/", function(params)
-            ngx.say("hello r3!")
+                ngx.say("hello r3!")
             end)
 
             r:get("/foo", bar)
             r:get([[/foo/{:\w+}/{:\w+}]], foo)
 
-            -- don't forget!
             r:compile()
 
-            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else
@@ -115,20 +111,19 @@ hit
     location /foo {
         content_by_lua_block {
             -- foo handler
-            function foo(params)
+            local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
 
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {{"GET"}, [[/foo/{:\w+}/{:\w+}]], foo}
+                {method = {"GET"}, uri = [[/foo/{:\w+}/{:\w+}]], handler = foo}
             })
 
-            -- don't forget!
             r:compile()
 
-            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else
@@ -152,20 +147,20 @@ hit
     location /foo {
         content_by_lua_block {
             -- foo handler
-            function foo(params)
+            local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
 
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {nil, [[/foo/{:\w+}/{:\w+}]], foo}
+                {uri = [[/foo/{:\w+}/{:\w+}]], handler = foo}
             })
 
             -- don't forget!
             r:compile()
 
-            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else
@@ -189,7 +184,7 @@ hit
     location /foo {
         content_by_lua_block {
             -- foo handler
-            function foo(params)
+            local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
 
@@ -197,12 +192,12 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new()
 
-            r:insert_route(nil, [[/foo/{:\w+}/{:\w+}]], foo)
+            r:insert_route([[/foo/{:\w+}/{:\w+}]], foo)
 
             -- don't forget!
             r:compile()
 
-            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else
@@ -226,7 +221,7 @@ hit
     location /foo {
         content_by_lua_block {
             -- foo handler
-            function foo(params)
+            local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
 
@@ -255,10 +250,10 @@ all done
     location /foo {
         content_by_lua_block {
             -- foo handler
-            function foo(params)
+            local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
             end
-            function bar(params)
+            local function bar(params)
                 ngx.say("bar: ", require("cjson").encode(params))
             end
 
@@ -270,17 +265,16 @@ all done
             r:get("/foo", foo)
             r:get("/bar", bar)
 
-            -- don't forget!
             r:compile()
 
-            local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else
                 ngx.say("not hit")
             end
 
-            ok = r:dispatch(ngx.req.get_method(), "/bar")
+            ok = r:dispatch("/bar", ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else
@@ -307,21 +301,20 @@ hit
         content_by_lua_block {
             -- foo handler
             local bar_param_tab
-            function bar(params)
+            local function bar(params)
                 bar_param_tab = params
             end
 
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {{"GET"}, "/bar", bar},
+                {method = {"GET"}, uri = "/bar", handler = bar}
             })
 
             r:compile()
 
             local param_tab = {}
-            local ok = r:dispatch2(param_tab, ngx.req.get_method(),
-                                   "/bar")
+            local ok = r:dispatch2(param_tab, "/bar", ngx.req.get_method())
             if ok then
                 ngx.say("hit")
             else

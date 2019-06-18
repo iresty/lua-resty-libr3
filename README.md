@@ -67,11 +67,11 @@ Creates a r3 object. In case of failures, returns `nil` and a string describing 
 
 `syntax: r3, err = r3router:new(routes)`
 
-The routes is a array table, like `{ {methods, uri, callback} }`.
+The routes is a array table, like `{ {...}, {...}, {...} }`.
 
     * methods: It's an array table, we can put one or more method names together. Here is the valid method name: "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS".
     * uri: Client request uri.
-    * callback: Lua callback function.
+    * handler: Lua callback function.
 
 Example:
 
@@ -83,7 +83,7 @@ end
 
 local r3route = require "resty.r3"
 local r3 = r3route.new({
-    {{"GET"}, [[/foo/{:\w+}/{:\w+}]], foo}
+    {method = {"GET"}, uri = [[/foo/{:\w+}/{:\w+}]], handler = foo}
 })
 ```
 
@@ -125,7 +125,7 @@ end
 
 r3:insert_route("/a", foo)
 r3:insert_route({"GET", "POST"}, "/a", foo)
-r3:insert_route({"GET"}, "/a", foo)
+r3:insert_route({method = {"GET"}, uri = "/a"}, foo)
 ```
 
 [Back to TOC](#table-of-contents)
