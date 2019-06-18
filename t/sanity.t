@@ -3,7 +3,7 @@
 use Test::Nginx::Socket::Lua 'no_plan';
 
 log_level('warn');
-repeat_each(5);
+repeat_each(2);
 
 our $HttpConfig = <<'_EOC_';
     lua_package_path 'lib/?.lua;;';
