@@ -46,6 +46,7 @@ __DATA__
             r:compile()
 
             local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
+            collectgarbage()
             if ok then
                 ngx.say("hit")
             else
@@ -90,6 +91,8 @@ hit
 
             -- don't forget!
             r:compile()
+
+            collectgarbage()
 
             local ok = r:dispatch(ngx.req.get_method(), ngx.var.uri)
             if ok then
