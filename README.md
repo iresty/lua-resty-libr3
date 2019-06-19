@@ -13,7 +13,8 @@ Table of Contents
 * [Synopsys](#synopsys)
 * [Methods](#methods)
     * [new](#new)
-    * [add_router](#add_router)
+    * [insert_route](#insert_route)
+    * [add router](#add-router)
     * [compile](#compile)
     * [dispatch](#dispatch)
     * [dispatch2](#dispatch2)
@@ -67,11 +68,14 @@ Creates a r3 object. In case of failures, returns `nil` and a string describing 
 
 `syntax: r3, err = r3router:new(routes)`
 
-The routes is a array table, like `{ {...}, {...}, {...} }`.
+The routes is a array table, like `{ {...}, {...}, {...} }`, Each element in the array is a route, which is a hash table.
 
-    * methods: It's an array table, we can put one or more method names together. Here is the valid method name: "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS".
-    * uri: Client request uri.
-    * handler: Lua callback function.
+The attributes of each element may contain these:
+* `uri`: client request uri.
+* `handler`: Lua callback function.
+* `host`: optional, client request host.
+* `methods`: optional, It's an array table, we can put one or more method names together. Here is the valid method name: "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS".
+
 
 Example:
 
@@ -91,31 +95,24 @@ local r3 = r3route.new({
     })
 ```
 
-[Back to TOC](#table-of-contents)
-
-
-add_router
-----------
-
-We can add a router by specifying a lowercase method name.
-
-Valid method name list: `get`, `post`, `put`, `delete`, `patch`, `head`, `options`.
-
 ```lua
--- route
-local function foo(params)
-    ngx.say("foo")
+-- foo handler
+function foo(params)
+    ngx.say("foo: ", require("cjson").encode(params))
 end
 
-r3:get("/a", foo)
-r3:post("/b", foo)
-r3:put("/c", foo)
-r3:delete("/d", foo)
+local r3route = require "resty.r3"
+local r3 = r3route.new()
 ```
 
+[Back to TOC](#table-of-contents)
+
+insert_route
+------------
+
 `syntax: r3, err = r3:insert_route(uri, callback)`
-`syntax: r3, err = r3:insert_route(method, uri, callback)`
 `syntax: r3, err = r3:insert_route({uri=..., method=..., host=...}, callback)`
+`syntax: r3, err = r3:insert_route(method, uri, callback)`
 
 The option can be a Lua table.
 
@@ -133,6 +130,25 @@ end
 r3:insert_route("/a", foo)
 r3:insert_route({"GET", "POST"}, "/a", foo)
 r3:insert_route({method = {"GET"}, uri = "/a"}, foo)
+```
+
+add router
+----------
+
+BTW, we can add a router by specifying a lowercase method name.
+
+Valid method name list: `get`, `post`, `put`, `delete`, `patch`, `head`, `options`.
+
+```lua
+-- route
+local function foo(params)
+    ngx.say("foo")
+end
+
+r3:get("/a", foo)
+r3:post("/b", foo)
+r3:put("/c", foo)
+r3:delete("/d", foo)
 ```
 
 [Back to TOC](#table-of-contents)
