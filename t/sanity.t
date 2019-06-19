@@ -141,7 +141,7 @@ hit
 
 
 
-=== TEST 4: create r3 object with arguments (no method)
+=== TEST 4: create r3 object with arguments
 --- http_config eval: $::HttpConfig
 --- config
     location /foo {

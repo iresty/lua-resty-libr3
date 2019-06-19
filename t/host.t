@@ -44,8 +44,6 @@ __DATA__
             local ok = r:dispatch(ngx.var.uri,
                             {method = ngx.req.get_method(), host = "localhost"})
 
-            -- collectgarbage()
-
             if ok then
                 ngx.say("hit")
             else
@@ -86,8 +84,6 @@ hit
             r:compile()
             local ok = r:dispatch(ngx.var.uri,
                             {method = ngx.req.get_method(), host = "localhost"})
-
-            -- collectgarbage()
 
             if ok then
                 ngx.say("hit")
@@ -130,9 +126,6 @@ not hit
             local ok = r:dispatch(ngx.var.uri,
                             {method = ngx.req.get_method(),
                              host = "not_found_host"})
-
-            -- collectgarbage()
-
             if ok then
                 ngx.say("hit")
             else

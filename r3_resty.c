@@ -77,12 +77,8 @@ r3_match_entry_create(const char *path, int method, const char *host)
     entry->request_method = method;
 
     if (host) {
-        size_t len = strlen(host);
-        char *buf = r3_mem_alloc(len);
-        memcpy(buf, host, len);
-
-        entry->host.base = buf;
-        entry->host.len = len;
+        entry->host.base = host;
+        entry->host.len = strlen(host);
     }
 
     return (void *) entry;
@@ -166,12 +162,6 @@ r3_match_entry_free(void *entry)
 
     if (entry == NULL) {
         return;
-    }
-
-    if (r3_entry->host.base) {
-        free((char *)r3_entry->host.base);
-        r3_entry->host.base = NULL;
-        r3_entry->host.len = 0;
     }
 
     match_entry_free(r3_entry);
