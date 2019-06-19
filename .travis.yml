@@ -33,4 +33,5 @@ install:
 script:
   - cd test-nginx && (sudo cpanm . > build.log 2>&1 || (cat build.log && exit 1)) && cd ..
   - export PATH=$OPENRESTY_PREFIX/nginx/sbin:$PATH
+  - make compile
   - prove -Itest-nginx/lib -r t
