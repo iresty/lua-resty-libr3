@@ -36,7 +36,10 @@ void *r3_insert(void *tree, int method, const char *path,
     int path_len, void *data, char **errstr);
 int r3_compile(void *tree, char** errstr);
 
-void *r3_match_entry_create(const char *path, int method);
+int r3_route_set_host(void *router, const char *host);
+int r3_route_attribute_free(void *router);
+
+void *r3_match_entry_create(const char *path, int method, const char *host);
 void *r3_match_route(const void *tree, void *entry);
 
 void *r3_match_route_fetch_idx(void *route);

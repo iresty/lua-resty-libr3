@@ -67,11 +67,11 @@ Creates a r3 object. In case of failures, returns `nil` and a string describing 
 
 `syntax: r3, err = r3router:new(routes)`
 
-The routes is a array table, like `{ {methods, uri, callback} }`.
+The routes is a array table, like `{ {...}, {...}, {...} }`.
 
     * methods: It's an array table, we can put one or more method names together. Here is the valid method name: "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS".
     * uri: Client request uri.
-    * callback: Lua callback function.
+    * handler: Lua callback function.
 
 Example:
 
@@ -83,8 +83,12 @@ end
 
 local r3route = require "resty.r3"
 local r3 = r3route.new({
-    {{"GET"}, [[/foo/{:\w+}/{:\w+}]], foo}
-})
+        {
+            method = {"GET"},
+            uri = [[/foo/{:\w+}/{:\w+}, host = "foo.com"]],
+            handler = foo
+        }
+    })
 ```
 
 [Back to TOC](#table-of-contents)
@@ -109,13 +113,16 @@ r3:put("/c", foo)
 r3:delete("/d", foo)
 ```
 
-`syntax: r3, err = r3:insert_route(methods, uri, callback)`
+`syntax: r3, err = r3:insert_route(uri, callback)`
+`syntax: r3, err = r3:insert_route(method, uri, callback)`
+`syntax: r3, err = r3:insert_route({uri=..., method=..., host=...}, callback)`
 
-The routes is a array table, like `{ {methods, uri, callback} }`.
+The option can be a Lua table.
 
-    * methods: It's an array table, we can put one or more method names together. If there was no method limit, we can use `nil` value.
-    * uri: Client request uri.
-    * callback: Lua callback function.
+* `method`: It's an array table, we can put one or more method names together.
+* `uri`: Client request uri.
+* `host`: Client request host name.
+* `callback`: Lua callback function.
 
 ```lua
 -- route
@@ -125,7 +132,7 @@ end
 
 r3:insert_route("/a", foo)
 r3:insert_route({"GET", "POST"}, "/a", foo)
-r3:insert_route({"GET"}, "/a", foo)
+r3:insert_route({method = {"GET"}, uri = "/a"}, foo)
 ```
 
 [Back to TOC](#table-of-contents)
@@ -143,9 +150,15 @@ It compiles our route paths into a prefix tree (trie). You must compile after ad
 dispatch
 --------
 
-`syntax: ok = r3:dispatch(method, uri)`
+`syntax: ok = r3:dispatch(uri, method)`
+`syntax: ok = r3:dispatch(uri, opts)`
 
-Dispatchs the path to the controller by `method` and `uri`.
+* `method`: method name of client request.
+* `opts`: a Lua tale
+    * `method`: method name of client request.
+    * `host`: host name of client request.
+
+Dispatchs the path to the controller by `method`, `uri` and `host`.
 
 ```lua
 local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
@@ -156,7 +169,8 @@ local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
 dispatch2
 ---------
 
-`syntax: ok = r3:dispatch2(param_tab, method, uri)`
+`syntax: ok = r3:dispatch2(param_tab, uri, method)`
+`syntax: ok = r3:dispatch2(param_tab, uri, opts)`
 
 Basically the same as `dispatch`, support for passing in a `table` object to
 store parsing parameters, makes it easier to reuse lua table.

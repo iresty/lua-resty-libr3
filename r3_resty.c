@@ -26,9 +26,38 @@ r3_insert(void *tree, int method, const char *path,
 {
     R3Node *r3_tree = (R3Node *)tree;
 
-    R3Route *router = r3_tree_insert_routel_ex(r3_tree, method, path, path_len,
-                                               data, errstr);
-    return (void *)router;
+    R3Route *route = r3_tree_insert_routel_ex(r3_tree, method, path, path_len,
+                                              data, errstr);
+    return (void *)route;
+}
+
+int
+r3_route_set_host(void *router, const char *host)
+{
+    R3Route *r3_router = (R3Route *)router;
+    if (r3_router->host.base) {
+        return -1;
+    }
+
+    r3_router->host.len = strlen(host);
+    char *host_buf = r3_mem_alloc(r3_router->host.len);
+    memcpy(host_buf, host, r3_router->host.len);
+    r3_router->host.base = host_buf;
+    return 0;
+}
+
+int
+r3_route_attribute_free(void *router)
+{
+    R3Route *r3_router = (R3Route *)router;
+    if (!r3_router->host.base) {
+        return 0;
+    }
+
+    free((void *)r3_router->host.base);
+    r3_router->host.base = NULL;
+    r3_router->host.len = 0;
+    return 0;
 }
 
 
@@ -40,12 +69,17 @@ r3_compile(void *tree, char** errstr)
 
 
 void *
-r3_match_entry_create(const char *path, int method)
+r3_match_entry_create(const char *path, int method, const char *host)
 {
     match_entry             *entry;
 
     entry = match_entry_create(path);
     entry->request_method = method;
+
+    if (host) {
+        entry->host.base = host;
+        entry->host.len = strlen(host);
+    }
 
     return (void *) entry;
 }
@@ -124,9 +158,12 @@ r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
 void
 r3_match_entry_free(void *entry)
 {
-    if (entry == NULL)
-        return;
+    match_entry    *r3_entry = (match_entry *)entry;
 
-    match_entry_free((match_entry *)entry);
+    if (entry == NULL) {
+        return;
+    }
+
+    match_entry_free(r3_entry);
     return;
 }
