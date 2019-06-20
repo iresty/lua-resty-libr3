@@ -160,15 +160,13 @@ local function insert_route(self, opts)
                              ffi_cast('intptr_t', self.match_data_index))
 
     local r3_node = r3.r3_insert(self.tree, method, uri, #uri, dataptr, nil)
-    ngx.log(ngx.WARN, "remote addr: ", remote_addr, " bits: ", remote_addr_bits)
     local ret = r3.r3_route_set_attr(r3_node, host, remote_addr,
                                      remote_addr_bits)
     if ret == -1 then
-        return nil, "failed to set the host for route"
+        ngx.log(ngx.ERR, "failed to set the attribute for route")
     end
 
     insert_tab(self.r3_nodes, r3_node)
-
     return r3_node
 end
 
@@ -207,6 +205,8 @@ function _M.new(routes)
         route_opts.method  = bit_methods
         route_opts.uri     = route.uri
         route_opts.host    = route.host
+        route_opts.handler = route.handler
+
         if route.remote_addr then
             local idx = string.find(route.remote_addr, "/", 1, true)
             if idx then
@@ -219,9 +219,6 @@ function _M.new(routes)
                 route_opts.remote_addr_bits = 32
             end
         end
-
-        ngx.log(ngx.WARN, require("cjson").encode(route_opts))
-        route_opts.handler = route.handler
 
         insert_route(self, route_opts)
     end
