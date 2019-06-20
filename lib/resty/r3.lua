@@ -144,8 +144,17 @@ local function insert_route(self, opts)
     end
 
     if not find_str(uri, [[{]], 1, true) then
+        local host_is_wildcard
+        local host_wildcard
+        if host and host:sub(1, 1) == '*' then
+            host_is_wildcard = true
+            host_wildcard = host:sub(2):reverse()
+        end
+
         self.hash_uri[uri] = {
             bit_methods = method,
+            host_is_wildcard = host_is_wildcard,
+            host_wildcard = host_wildcard,
             host = host,
             remote_addr = remote_addr,
             remote_addr_bits = remote_addr_bits,
@@ -379,8 +388,16 @@ local function dispatch2(self, params, uri, method_or_opts, ...)
             return false
         end
 
-        if route.host and route.host ~= opts.host then
-            return false
+        if route.host then
+            if route.host_is_wildcard then
+                local i = opts.host:reverse():find(route.host_wildcard, 1, true)
+                if i ~= 1 then
+                    return false
+                end
+
+            elseif route.host ~= opts.host then
+                return false
+            end
         end
 
         route.handler(params, ...)
