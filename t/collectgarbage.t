@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+use t::R3;
 
 my $pwd = `pwd`;
 chomp $pwd;
@@ -11,19 +11,11 @@ if($pwd =~ m{^/home/travis}) {
     plan('no_plan');
 }
 
-log_level('info');
-repeat_each(2);
-
-our $HttpConfig = <<'_EOC_';
-    lua_package_path 'lib/?.lua;;';
-_EOC_
-
 run_tests();
 
 __DATA__
 
 === TEST 1: create r3 object by `new`
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -67,7 +59,6 @@ hit
 
 
 === TEST 2: insert rule
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {

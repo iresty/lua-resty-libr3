@@ -1,20 +1,12 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua 'no_plan';
-
-log_level('warn');
-repeat_each(2);
-
-our $HttpConfig = <<'_EOC_';
-    lua_package_path 'lib/?.lua;;';
-_EOC_
+use t::R3 'no_plan';
 
 run_tests();
 
 __DATA__
 
 === TEST 1: sanity
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -61,7 +53,6 @@ hit
 
 
 === TEST 2: anonymous variable
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -106,7 +97,6 @@ hit
 
 
 === TEST 3: create r3 object with arguments
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -142,7 +132,6 @@ hit
 
 
 === TEST 4: create r3 object with arguments
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -179,7 +168,6 @@ hit
 
 
 === TEST 5: insert router
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -216,7 +204,6 @@ hit
 
 
 === TEST 6: free
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -245,7 +232,6 @@ all done
 
 
 === TEST 7: no pattern
---- http_config eval: $::HttpConfig
 --- config
     location /foo {
         content_by_lua_block {
@@ -295,7 +281,6 @@ hit
 
 
 === TEST 8: method dispatch2, specified a table to store the parameter
---- http_config eval: $::HttpConfig
 --- config
     location /t {
         content_by_lua_block {
