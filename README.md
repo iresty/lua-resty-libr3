@@ -119,14 +119,17 @@ insert_route
 ------------
 
 `syntax: r3, err = r3:insert_route(uri, callback)`
+
 `syntax: r3, err = r3:insert_route({uri=..., method=..., host=...}, callback)`
+
 `syntax: r3, err = r3:insert_route(method, uri, callback)`
 
 The option can be a Lua table.
 
 * `method`: It's an array table, we can put one or more method names together.
 * `uri`: Client request uri.
-* `host`: Client request host name.
+* `host`: optional, client request host, not only supports normal domain name, but also supports wildcard name, both `foo.com` and `*.foo.com` are valid.
+* `remote_addr`: optional, client remote address like `192.168.1.100`, and we can use CIDR format, eg `192.168.1.0/24`.
 * `callback`: Lua callback function.
 
 ```lua
@@ -178,12 +181,17 @@ dispatch
 --------
 
 `syntax: ok = r3:dispatch(uri, method)`
+
+* `uri`: client request uri.
+* `method`: method name of client request.
+
 `syntax: ok = r3:dispatch(uri, opts)`
 
-* `method`: method name of client request.
+* `uri`: client request uri.
 * `opts`: a Lua tale
-    * `method`: method name of client request.
-    * `host`: host name of client request.
+    * `method`: optional, method name of client request.
+    * `host`: optional, client request host, not only supports normal domain name, but also supports wildcard name, both `foo.com` and `*.foo.com` are valid.
+    * `remote_addr`: optional, client remote address like `192.168.1.100`, and we can use CIDR format, eg `192.168.1.0/24`.
 
 Dispatchs the path to the controller by `method`, `uri` and `host`.
 
@@ -197,6 +205,7 @@ dispatch2
 ---------
 
 `syntax: ok = r3:dispatch2(param_tab, uri, method)`
+
 `syntax: ok = r3:dispatch2(param_tab, uri, opts)`
 
 Basically the same as `dispatch`, support for passing in a `table` object to
