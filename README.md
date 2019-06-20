@@ -74,6 +74,7 @@ The attributes of each element may contain these:
 * `uri`: client request uri.
 * `handler`: Lua callback function.
 * `host`: optional, client request host, not only supports normal domain name, but also supports wildcard name, both `foo.com` and `*.foo.com` are valid.
+* `remote_addr`: optional, client remote address like `192.168.1.100`, and we can use CIDR format, eg `192.168.1.0/24`.
 * `methods`: optional, It's an array table, we can put one or more method names together. Here is the valid method name: "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS".
 
 
@@ -88,26 +89,28 @@ end
 local r3route = require "resty.r3"
 local r3 = r3route.new({
         {
+            uri = [[/foo/{:\w+}/{:\w+}"]],
             method = {"GET"},
-            uri = [[/foo/{:\w+}/{:\w+}, host = "foo.com"]],
             handler = foo
         },
         {
-            method = {"GET"},
-            uri = [[/foo/{:\w+}/{:\w+}, host = "*.foo.com"]],
+            uri = [[/bar/{:\w+}/{:\w+}]],
+            host = "*.bar.com",
             handler = foo
-        }
+        },
+        {
+            uri = [[/alice/{:\w+}/{:\w+}]],
+            remote_addr = "192.168.1.0/24",
+            handler = foo
+        },
+        {
+            uri = [[/bob/{:\w+}/{:\w+}]],
+            method = {"GET"},
+            host = "*.bob.com",
+            remote_addr = "192.168.1.0/24",
+            handler = foo
+        },
     })
-```
-
-```lua
--- foo handler
-function foo(params)
-    ngx.say("foo: ", require("cjson").encode(params))
-end
-
-local r3route = require "resty.r3"
-local r3 = r3route.new()
 ```
 
 [Back to TOC](#table-of-contents)
@@ -131,6 +134,9 @@ The option can be a Lua table.
 local function foo(params)
     ngx.say("foo")
 end
+
+local r3route = require "resty.r3"
+local r3 = r3route.new()
 
 r3:insert_route("/a", foo)
 r3:insert_route({"GET", "POST"}, "/a", foo)

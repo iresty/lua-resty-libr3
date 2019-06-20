@@ -13,6 +13,7 @@ local ffi_cast    = ffi.cast
 local ffi_cdef    = ffi.cdef
 local ffi_string  = ffi.string
 local insert_tab  = table.insert
+local str_sub     = string.sub
 
 
 local function load_shared_lib(so_name)
@@ -65,7 +66,8 @@ void *r3_insert(void *tree, int method, const char *path,
     int path_len, void *data, char **errstr);
 int r3_compile(void *tree, char** errstr);
 
-int r3_route_set_host(void *router, const char *host);
+int r3_route_set_attr(void *router, const char *host, const char *remote_addr,
+    int remote_addr_bits);
 int r3_route_attribute_free(void *router);
 
 void *r3_match_entry_create(const char *path, int method, const char *host);
@@ -129,10 +131,13 @@ local _METHODS = {
 
 local route_opts = {}
 local function insert_route(self, opts)
-    local method = opts.method
-    local uri = opts.uri
-    local host = opts.host
+    local method  = opts.method
+    local uri     = opts.uri
+    local host    = opts.host
     local handler = opts.handler
+    local remote_addr = opts.remote_addr or "0.0.0.0"
+    local remote_addr_bits = tonumber(opts.remote_addr_bits) or 0
+
     if not method or not uri or not handler then
         return nil, "invalid argument of route"
     end
@@ -141,6 +146,8 @@ local function insert_route(self, opts)
         self.hash_uri[uri] = {
             bit_methods = method,
             host = host,
+            remote_addr = remote_addr,
+            remote_addr_bits = remote_addr_bits,
             handler = handler,
         }
         return true
@@ -152,14 +159,14 @@ local function insert_route(self, opts)
                              ffi_cast('intptr_t', self.match_data_index))
 
     local r3_node = r3.r3_insert(self.tree, method, uri, #uri, dataptr, nil)
-    if host then
-        local ret = r3.r3_route_set_host(r3_node, host)
-        if ret == -1 then
-            return nil, "failed to set the host for route"
-        end
-
-        insert_tab(self.r3_nodes, r3_node)
+    ngx.log(ngx.WARN, "remote addr: ", remote_addr, " bits: ", remote_addr_bits)
+    local ret = r3.r3_route_set_attr(r3_node, host, remote_addr,
+                                     remote_addr_bits)
+    if ret == -1 then
+        return nil, "failed to set the host for route"
     end
+
+    insert_tab(self.r3_nodes, r3_node)
 
     return r3_node
 end
@@ -199,7 +206,22 @@ function _M.new(routes)
         route_opts.method  = bit_methods
         route_opts.uri     = route.uri
         route_opts.host    = route.host
+        if route.remote_addr then
+            local idx = string.find(route.remote_addr, "/", 1, true)
+            if idx then
+                route_opts.remote_addr  = str_sub(route.remote_addr, 1, idx)
+                route_opts.remote_addr_bits = str_sub(route.remote_addr,
+                                                      idx + 1)
+
+            else
+                route_opts.remote_addr = route.remote_addr
+                route_opts.remote_addr_bits = 32
+            end
+        end
+
+        -- ngx.log(ngx.WARN, require("cjson").encode(route_opts))
         route_opts.handler = route.handler
+
         insert_route(self, route_opts)
     end
 
@@ -298,6 +320,8 @@ function _M.insert_route(self, ...)
     end
 
     local method, uri, host
+    local remote_addr = "0.0.0.0"
+    local remote_addr_bits = 0
     if nargs == 2 then
         local uri_or_opts = select(1, ...)
         if type(uri_or_opts) == "table" then
@@ -305,6 +329,9 @@ function _M.insert_route(self, ...)
             method = opts.method
             uri    = opts.uri
             host   = opts.host
+            remote_addr      = opts.remote_addr
+            remote_addr_bits = opts.remote_addr_bits
+
         else
             method = 0
             uri = uri_or_opts
@@ -331,6 +358,8 @@ function _M.insert_route(self, ...)
     route_opts.uri = uri
     route_opts.host = host
     route_opts.handler = handler
+    route_opts.remote_addr = remote_addr
+    route_opts.remote_addr_bits = remote_addr_bits
     return insert_route(self, route_opts)
 end
 
