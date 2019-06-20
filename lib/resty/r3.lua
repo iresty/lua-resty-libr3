@@ -81,6 +81,8 @@ int r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
     size_t *val_len);
 
 void r3_match_entry_free(void *entry);
+
+unsigned int inet_network(const char *cp);
 ]]
 
 
@@ -156,10 +158,11 @@ local function insert_route(self, opts)
             host_is_wildcard = host_is_wildcard,
             host_wildcard = host_wildcard,
             host = host,
-            remote_addr = remote_addr,
+            remote_addr = r3.inet_network(remote_addr),
             remote_addr_bits = remote_addr_bits,
             handler = handler,
         }
+
         return true
     end
 
@@ -328,8 +331,8 @@ function _M.insert_route(self, ...)
     end
 
     local method, uri, host
-    local remote_addr = "0.0.0.0"
-    local remote_addr_bits = 0
+    local remote_addr
+    local remote_addr_bits
     if nargs == 2 then
         local uri_or_opts = select(1, ...)
         if type(uri_or_opts) == "table" then
@@ -400,6 +403,14 @@ local function dispatch2(self, params, uri, method_or_opts, ...)
                 end
 
             elseif route.host ~= opts.host then
+                return false
+            end
+        end
+
+        if route.remote_addr and route.remote_addr > 0 then
+            local remote_addr_inet = r3.inet_network(opts.remote_addr)
+            if bit.rshift(route.remote_addr, 32 - route.remote_addr_bits)
+               ~= bit.rshift(remote_addr_inet, 32 - route.remote_addr_bits) then
                 return false
             end
         end
