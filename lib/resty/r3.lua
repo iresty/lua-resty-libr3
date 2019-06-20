@@ -70,7 +70,8 @@ int r3_route_set_attr(void *router, const char *host, const char *remote_addr,
     int remote_addr_bits);
 int r3_route_attribute_free(void *router);
 
-void *r3_match_entry_create(const char *path, int method, const char *host);
+void *r3_match_entry_create(const char *path, int method, const char *host,
+    const char *remote_addr);
 void *r3_match_route(const void *tree, void *entry);
 void *r3_match_route_fetch_idx(void *route);
 
@@ -209,7 +210,7 @@ function _M.new(routes)
         if route.remote_addr then
             local idx = string.find(route.remote_addr, "/", 1, true)
             if idx then
-                route_opts.remote_addr  = str_sub(route.remote_addr, 1, idx)
+                route_opts.remote_addr  = str_sub(route.remote_addr, 1, idx - 1)
                 route_opts.remote_addr_bits = str_sub(route.remote_addr,
                                                       idx + 1)
 
@@ -219,7 +220,7 @@ function _M.new(routes)
             end
         end
 
-        -- ngx.log(ngx.WARN, require("cjson").encode(route_opts))
+        ngx.log(ngx.WARN, require("cjson").encode(route_opts))
         route_opts.handler = route.handler
 
         insert_route(self, route_opts)
@@ -248,7 +249,8 @@ function _M.match_route(self, uri, opts, ...)
     local method = opts.method
     method = _METHODS[method] or 0
 
-    local entry = r3.r3_match_entry_create(uri, method, opts.host)
+    local entry = r3.r3_match_entry_create(uri, method, opts.host,
+                                           opts.remote_addr)
     local match_route = r3.r3_match_route(self.tree, entry)
     if match_route == nil then
         r3.r3_match_entry_free(entry)

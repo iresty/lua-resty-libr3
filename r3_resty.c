@@ -86,7 +86,8 @@ r3_compile(void *tree, char** errstr)
 
 
 void *
-r3_match_entry_create(const char *path, int method, const char *host)
+r3_match_entry_create(const char *path, int method, const char *host,
+    const char *remote_addr)
 {
     match_entry             *entry;
 
@@ -96,6 +97,11 @@ r3_match_entry_create(const char *path, int method, const char *host)
     if (host) {
         entry->host.base = host;
         entry->host.len = strlen(host);
+    }
+
+    if (remote_addr) {
+        entry->remote_addr.base = remote_addr;
+        entry->remote_addr.len = sizeof(remote_addr) - 1;
     }
 
     return (void *) entry;
