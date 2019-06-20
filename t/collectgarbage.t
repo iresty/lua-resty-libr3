@@ -6,7 +6,7 @@ my $pwd = `pwd`;
 chomp $pwd;
 
 if($pwd =~ m{^/home/travis}) {
-    plan(skip_all => "todo, travis failed");
+    plan(skip_all => "fix me: https://github.com/iresty/lua-resty-libr3/issues/13");
 } else {
     plan('no_plan');
 }

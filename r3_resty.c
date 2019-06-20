@@ -1,3 +1,5 @@
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "r3_resty.h"
 
 
@@ -32,17 +34,32 @@ r3_insert(void *tree, int method, const char *path,
 }
 
 int
-r3_route_set_host(void *router, const char *host)
+r3_route_set_attr(void *router, const char *host, const char *remote_addr,
+    int remote_addr_bits)
 {
     R3Route *r3_router = (R3Route *)router;
     if (r3_router->host.base) {
         return -1;
     }
 
-    r3_router->host.len = strlen(host);
-    char *host_buf = r3_mem_alloc(r3_router->host.len);
-    memcpy(host_buf, host, r3_router->host.len);
-    r3_router->host.base = host_buf;
+    if (host) {
+        r3_router->host.len = strlen(host);
+        char *host_buf = r3_mem_alloc(r3_router->host.len);
+        memcpy(host_buf, host, r3_router->host.len);
+        r3_router->host.base = host_buf;
+    }
+
+    if (remote_addr_bits == 0) {
+        r3_router->remote_addr_v4_bits = 0;
+        r3_router->remote_addr_v4 = 0;
+
+    } else {
+        r3_router->remote_addr_v4_bits = remote_addr_bits;
+        r3_router->remote_addr_v4 = inet_network(remote_addr);
+    }
+
+    // fprintf(stderr, "addr: %u bits: %d\n", r3_router->remote_addr_v4,
+    //         r3_router->remote_addr_v4_bits);
     return 0;
 }
 
@@ -69,7 +86,8 @@ r3_compile(void *tree, char** errstr)
 
 
 void *
-r3_match_entry_create(const char *path, int method, const char *host)
+r3_match_entry_create(const char *path, int method, const char *host,
+    const char *remote_addr)
 {
     match_entry             *entry;
 
@@ -79,6 +97,11 @@ r3_match_entry_create(const char *path, int method, const char *host)
     if (host) {
         entry->host.base = host;
         entry->host.len = strlen(host);
+    }
+
+    if (remote_addr) {
+        entry->remote_addr.base = remote_addr;
+        entry->remote_addr.len = sizeof(remote_addr) - 1;
     }
 
     return (void *) entry;
