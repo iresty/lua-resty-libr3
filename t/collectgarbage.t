@@ -2,7 +2,14 @@
 
 use Test::Nginx::Socket::Lua;
 
-plan(skip_all => "todo, travis failed");
+my $pwd = `pwd`;
+chomp $pwd;
+
+if($pwd =~ m{^/home/travis}) {
+    plan(skip_all => "todo, travis failed");
+} else {
+    plan('no_plan');
+}
 
 log_level('info');
 repeat_each(2);

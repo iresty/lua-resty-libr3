@@ -73,7 +73,7 @@ The routes is a array table, like `{ {...}, {...}, {...} }`, Each element in the
 The attributes of each element may contain these:
 * `uri`: client request uri.
 * `handler`: Lua callback function.
-* `host`: optional, client request host.
+* `host`: optional, client request host, not only supports normal domain name, but also supports wildcard name, both `foo.com` and `*.foo.com` are valid.
 * `methods`: optional, It's an array table, we can put one or more method names together. Here is the valid method name: "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS".
 
 
@@ -90,6 +90,11 @@ local r3 = r3route.new({
         {
             method = {"GET"},
             uri = [[/foo/{:\w+}/{:\w+}, host = "foo.com"]],
+            handler = foo
+        },
+        {
+            method = {"GET"},
+            uri = [[/foo/{:\w+}/{:\w+}, host = "*.foo.com"]],
             handler = foo
         }
     })

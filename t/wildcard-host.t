@@ -28,21 +28,17 @@ __DATA__
             local r = r3router.new({
                 {
                     uri = [[/foo/{:\w+}/{:\w+}]],
-                    host = "localhost",
+                    host = "*.foo.com",
                     handler = foo,
-                },
-                {
-                    method = {"GET", "POST"},
-                    uri = [[/bar/{:\w+}/{:\w+}]],
-                    host = "localhost",
-                    handler = bar,
                 }
             })
 
             r:compile()
 
-            local ok = r:dispatch(ngx.var.uri,
-                            {method = ngx.req.get_method(), host = "localhost"})
+            local ok = r:dispatch(ngx.var.uri, {
+                                method = ngx.req.get_method(),
+                                host = "www.foo.com"
+                            })
 
             if ok then
                 ngx.say("hit")
@@ -61,7 +57,7 @@ hit
 
 
 
-=== TEST 2: not match (host is different)
+=== TEST 2: not match
 --- http_config eval: $::HttpConfig
 --- config
     location /foo {
@@ -76,14 +72,16 @@ hit
             local r = r3router.new({
                 {
                     uri = [[/foo/{:\w+}/{:\w+}]],
-                    host = "not_found_host",
+                    host = "*.foo.com",
                     handler = foo,
                 }
             })
 
             r:compile()
-            local ok = r:dispatch(ngx.var.uri,
-                            {method = ngx.req.get_method(), host = "localhost"})
+            local ok = r:dispatch(ngx.var.uri,{
+                                method = ngx.req.get_method(),
+                                host = "foo.com"
+                            })
 
             if ok then
                 ngx.say("hit")
@@ -101,7 +99,7 @@ not hit
 
 
 
-=== TEST 3: not match (host is different)
+=== TEST 3: multiple route
 --- http_config eval: $::HttpConfig
 --- config
     location /foo {
@@ -111,21 +109,36 @@ not hit
                 ngx.say("foo: ", require("cjson").encode(params))
             end
 
+            local function bar(params)
+                ngx.say("bar: ", require("cjson").encode(params))
+            end
+
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
-                    host = "localhost",
+                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    host = "*.bar.com",
+                    handler = bar,
+                },
+                {
+                    uri = [[/bar/{:\w+}/{:\w+}]],
+                    host = "*.foo.com",
+                    handler = bar,
+                },
+                {
+                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    host = "*.foo.com",
                     handler = foo,
                 }
             })
 
             r:compile()
+            local ok = r:dispatch(ngx.var.uri,{
+                                method = ngx.req.get_method(),
+                                host = "a.b.foo.com"
+                            })
 
-            local ok = r:dispatch(ngx.var.uri,
-                            {method = ngx.req.get_method(),
-                             host = "not_found_host"})
             if ok then
                 ngx.say("hit")
             else
@@ -138,4 +151,5 @@ GET /foo/idv/namev
 --- no_error_log
 [error]
 --- response_body
-not hit
+foo: ["idv","namev"]
+hit
