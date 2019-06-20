@@ -389,6 +389,10 @@ local function dispatch2(self, params, uri, method_or_opts, ...)
         end
 
         if route.host then
+            if #route.host > #opts.host then
+                return false
+            end
+
             if route.host_is_wildcard then
                 local i = opts.host:reverse():find(route.host_wildcard, 1, true)
                 if i ~= 1 then

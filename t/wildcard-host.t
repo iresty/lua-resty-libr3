@@ -186,3 +186,45 @@ GET /foo/idv/namev
 --- response_body
 foo: {}
 hit
+
+
+
+=== TEST 5: uri hash cache
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {
+                    uri = [[/foo/idv/namev]],
+                    host = "*.foo.com",
+                    handler = foo,
+                }
+            })
+
+            r:compile()
+
+            local ok = r:dispatch(ngx.var.uri, {
+                                method = ngx.req.get_method(),
+                                host = ".foo.com"
+                            })
+
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- no_error_log
+[error]
+--- response_body
+not hit
