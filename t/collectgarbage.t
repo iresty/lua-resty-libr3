@@ -40,7 +40,7 @@ location /foo {
             end
         end
 
-        for i = 1, 5 do
+        for i = 1, 20 do
             test()
         end
     }
@@ -49,30 +49,21 @@ location /foo {
 GET /foo/idv/namev
 --- no_error_log
 [error]
---- response_body
-foo: ["idv","namev"]
-hit
-foo: ["idv","namev"]
-hit
-foo: ["idv","namev"]
-hit
-foo: ["idv","namev"]
-hit
-foo: ["idv","namev"]
-hit
 
 
 
-=== TEST 2: insert rule
+=== TEST 2: insert route with method
 --- config
-    location /foo {
-        content_by_lua_block {
-            -- foo handler
+location /foo {
+    content_by_lua_block {
+        local t = {}
+        local function test()
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                t.foo = (t.foo or 0) + 1
             end
+
             local function bar(params)
-                ngx.say("bar: ", require("cjson").encode(params))
+                t.bar = (t.bar or 0) + 1
             end
 
             -- r3 router
@@ -80,10 +71,6 @@ hit
             local r = r3router.new()
 
             -- insert route
-            r:get("/", function(params)
-                ngx.say("hello r3!")
-            end)
-
             r:get("/foo", bar)
             r:get("/foo/{id}/{name}", foo)
             r:post("/foo/{id}/{name}", bar)
@@ -93,19 +80,24 @@ hit
 
             local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
 
-            collectgarbage()
-
             if ok then
-                ngx.say("hit")
-            else
-                ngx.say("not hit")
+                return "hit"
             end
-        }
+
+            return "not hit"
+        end
+
+        for i=1,100 do
+            local res = test()
+            t[res] = (t[res] or 0) + 1
+            collectgarbage()
+        end
+        ngx.say(require("cjson").encode(t))
     }
+}
 --- request
 GET /foo/a/b
 --- no_error_log
 [error]
 --- response_body
-foo: {"name":"b","id":"a"}
-hit
+{"foo":100,"hit":100}

@@ -111,11 +111,6 @@ end
 
 
 local function gc_free(self)
-    for _, r3_node in ipairs(self.r3_nodes) do
-        r3.r3_route_attribute_free(r3_node)
-    end
-
-    clear_tab(self.r3_nodes)
     self:free()
 end
 
@@ -276,6 +271,10 @@ function _M.free(self)
 
     r3.r3_free(self.tree)
     self.tree = nil
+
+    for _, r3_node in ipairs(self.r3_nodes) do
+        r3.r3_route_attribute_free(r3_node)
+    end
 end
 
 
@@ -463,7 +462,8 @@ function _M.dispatch2(self, params, uri, method_or_opts, ...)
         opts = opts_method
     end
 
-    return dispatch2(self, params, uri, opts, ...)
+    local ok = dispatch2(self, params, uri, opts, ...)
+    return ok
 end
 
 
@@ -476,7 +476,8 @@ function _M.dispatch(self, uri, method_or_opts, ...)
         opts = opts_method
     end
 
-    return dispatch2(self, {}, uri, opts, ...)
+    local ok = dispatch2(self, {}, uri, opts, ...)
+    return ok
 end
 
 
