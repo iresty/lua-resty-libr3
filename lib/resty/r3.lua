@@ -2,6 +2,7 @@
 
 local base        = require("resty.core.base")
 local clear_tab   = require("table.clear")
+local clone_tab   = require("table.clone")
 local str_buff    = base.get_string_buf(256)
 local buf_len_prt = base.get_size_ptr()
 local new_tab     = base.new_tab
@@ -156,7 +157,7 @@ local function insert_route(self, opts)
         return nil, "invalid argument of route"
     end
 
-    insert_tab(self.cached_route_conf, opts)
+    insert_tab(self.cached_route_conf, clone_tab(opts))
 
     if not self.disable_uri_cache_opt
        and not find_str(uri, [[{]], 1, true) then

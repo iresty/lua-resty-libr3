@@ -23,11 +23,6 @@ location /foo {
                     uri = [[/foo/{:\w+}/{:\w+}]],
                     host = "localhost",
                     handler = foo,
-                },
-                {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
-                    host = "localhost",
-                    handler = foo,
                 }
             })
 
