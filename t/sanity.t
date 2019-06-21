@@ -316,3 +316,60 @@ GET /t
 --- response_body
 hit
 passed parameter table: true
+
+
+
+=== TEST 9: multiple routes: same uri, different method
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function post(params)
+                ngx.say("post: ", require("cjson").encode(params))
+            end
+            local function get(params)
+                ngx.say("get: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            -- insert route
+            r:post("/foo", post)
+            r:get("/foo", get)
+
+            r:compile()
+
+            local ok = r:dispatch("/foo", "GET")
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+
+            ok = r:dispatch("/foo", "POST")
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+
+            ok = r:dispatch("/foo", "PUT")
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo
+--- no_error_log
+[error]
+--- response_body
+get: {}
+hit
+post: {}
+hit
+not hit

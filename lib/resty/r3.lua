@@ -156,7 +156,8 @@ local function insert_route(self, opts)
         return nil, "invalid argument of route"
     end
 
-    if not self.disable_uri_cache_opt and not find_str(uri, [[{]], 1, true) then
+    if not self.disable_uri_cache_opt
+       and not find_str(uri, [[{]], 1, true) then
         local host_is_wildcard
         local host_wildcard
         if host and host:sub(1, 1) == '*' then
@@ -164,7 +165,7 @@ local function insert_route(self, opts)
             host_wildcard = host:sub(2):reverse()
         end
 
-        self.hash_uri[uri] = {
+        local uri_cache = {
             bit_methods = method,
             host_is_wildcard = host_is_wildcard,
             host_wildcard = host_wildcard,
@@ -173,6 +174,13 @@ local function insert_route(self, opts)
             remote_addr_bits = remote_addr_bits,
             handler = handler,
         }
+
+        if not self.hash_uri[uri] then
+            self.hash_uri[uri] = {uri_cache}
+
+        else
+            insert_tab(self.hash_uri[uri], uri_cache)
+        end
 
         return true
     end
@@ -273,13 +281,13 @@ local function match_route(self, uri, opts, params, ...)
 
     local entry = r3.r3_match_entry_create(uri, method, opts.host,
                                            opts.remote_addr)
-    local match_route = r3.r3_match_route(self.tree, entry)
-    if match_route == nil then
+    local matched_route = r3.r3_match_route(self.tree, entry)
+    if matched_route == nil then
         r3.r3_match_entry_free(entry)
         return false
     end
 
-    local data_idx = r3.r3_match_route_fetch_idx(match_route)
+    local data_idx = r3.r3_match_route_fetch_idx(matched_route)
 
     -- get match data from index
     local idx = tonumber(ffi_cast('intptr_t', ffi_cast('void *', data_idx)))
@@ -393,42 +401,51 @@ function _M.insert_route(self, ...)
 end
 
 
-local opts_method = {}
-local function dispatch2(self, params, uri, opts, ...)
-    if not self.disable_uri_cache_opt and self.hash_uri[uri] then
-        local method = opts and opts.method
-        local route = self.hash_uri[uri]
-        if route.bit_methods ~= 0 and
-           bit.band(route.bit_methods, _METHODS[method]) == 0 then
+local function match_by_uri_cache(route, params, opts, ...)
+    local method = opts and opts.method
+    if route.bit_methods ~= 0 and
+        bit.band(route.bit_methods, _METHODS[method]) == 0 then
+        return false
+    end
+
+    if route.host then
+        if #route.host > #opts.host then
             return false
         end
 
-        if route.host then
-            if #route.host > #opts.host then
+        if route.host_is_wildcard then
+            local i = opts.host:reverse():find(route.host_wildcard, 1, true)
+            if i ~= 1 then
                 return false
             end
 
-            if route.host_is_wildcard then
-                local i = opts.host:reverse():find(route.host_wildcard, 1, true)
-                if i ~= 1 then
-                    return false
-                end
+        elseif route.host ~= opts.host then
+            return false
+        end
+    end
 
-            elseif route.host ~= opts.host then
-                return false
+    if route.remote_addr and route.remote_addr > 0 then
+        local remote_addr_inet = r3.inet_network(opts.remote_addr)
+        if bit.rshift(route.remote_addr, 32 - route.remote_addr_bits)
+            ~= bit.rshift(remote_addr_inet, 32 - route.remote_addr_bits) then
+            return false
+        end
+    end
+
+    route.handler(params, ...)
+    return true
+end
+
+
+local opts_method = {}
+local function dispatch2(self, params, uri, opts, ...)
+    if not self.disable_uri_cache_opt and self.hash_uri[uri] then
+        for _, route in ipairs(self.hash_uri[uri]) do
+            local ok = match_by_uri_cache(route, params, opts, ...)
+            if ok then
+                return ok
             end
         end
-
-        if route.remote_addr and route.remote_addr > 0 then
-            local remote_addr_inet = r3.inet_network(opts.remote_addr)
-            if bit.rshift(route.remote_addr, 32 - route.remote_addr_bits)
-               ~= bit.rshift(remote_addr_inet, 32 - route.remote_addr_bits) then
-                return false
-            end
-        end
-
-        route.handler(params, ...)
-        return true
     end
 
     return match_route(self, uri, opts, params, ...)
