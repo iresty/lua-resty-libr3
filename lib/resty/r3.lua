@@ -13,6 +13,17 @@ local ffi_cast    = ffi.cast
 local ffi_cdef    = ffi.cdef
 local ffi_string  = ffi.string
 local insert_tab  = table.insert
+local string      = string
+local io          = io
+local package     = package
+local getmetatable=getmetatable
+local setmetatable=setmetatable
+local ngx_log     = ngx.log
+local ngx_ERR     = ngx.ERR
+local type        = type
+local select      = select
+local error       = error
+local newproxy    = _G.newproxy
 local str_sub     = string.sub
 
 
@@ -145,7 +156,7 @@ local function insert_route(self, opts)
         return nil, "invalid argument of route"
     end
 
-    if not find_str(uri, [[{]], 1, true) then
+    if not self.disable_uri_cache_opt and not find_str(uri, [[{]], 1, true) then
         local host_is_wildcard
         local host_wildcard
         if host and host:sub(1, 1) == '*' then
@@ -175,7 +186,7 @@ local function insert_route(self, opts)
     local ret = r3.r3_route_set_attr(r3_node, host, remote_addr,
                                      remote_addr_bits)
     if ret == -1 then
-        ngx.log(ngx.ERR, "failed to set the attribute for route")
+        ngx_log(ngx_ERR, "failed to set the attribute for route")
     end
 
     insert_tab(self.r3_nodes, r3_node)
@@ -183,8 +194,9 @@ local function insert_route(self, opts)
 end
 
 
-function _M.new(routes)
+function _M.new(routes, opts)
     local route_n = routes and #routes or 10
+    local disable_uri_cache_opt = opts and opts.disable_uri_cache_opt
 
     local self = setmt__gc({
                             tree = r3.r3_create(route_n),
@@ -192,6 +204,7 @@ function _M.new(routes)
                             r3_nodes = new_tab(128, 0),
                             match_data_index = 0,
                             match_data = new_tab(route_n, 0),
+                            disable_uri_cache_opt = disable_uri_cache_opt,
                             }, mt)
 
     if not routes then return self end
@@ -220,7 +233,7 @@ function _M.new(routes)
         route_opts.handler = route.handler
 
         if route.remote_addr then
-            local idx = string.find(route.remote_addr, "/", 1, true)
+            local idx = find_str(route.remote_addr, "/", 1, true)
             if idx then
                 route_opts.remote_addr  = str_sub(route.remote_addr, 1, idx - 1)
                 route_opts.remote_addr_bits = str_sub(route.remote_addr,
@@ -254,7 +267,7 @@ function _M.free(self)
 end
 
 
-function _M.match_route(self, uri, opts, ...)
+local function match_route(self, uri, opts, params, ...)
     local method = opts.method
     method = _METHODS[method] or 0
 
@@ -272,25 +285,25 @@ function _M.match_route(self, uri, opts, ...)
     local idx = tonumber(ffi_cast('intptr_t', ffi_cast('void *', data_idx)))
     local block = self.match_data[idx]
 
-    -- todo: fetch tokers and slugs information
-    buf_len_prt[0] = 0
-    local cnt = r3.r3_match_entry_fetch_slugs(entry, 0, nil, buf_len_prt)
-    local params = new_tab(0, cnt)
+    if params then
+        buf_len_prt[0] = 0
+        local cnt = r3.r3_match_entry_fetch_slugs(entry, 0, nil, buf_len_prt)
 
-    idx = 0
-    for i = 0, cnt - 1 do
-        r3.r3_match_entry_fetch_slugs(entry, i, str_buff, buf_len_prt)
-        local key = ffi_string(str_buff, buf_len_prt[0])
+        idx = 0
+        for i = 0, cnt - 1 do
+            r3.r3_match_entry_fetch_slugs(entry, i, str_buff, buf_len_prt)
+            local key = ffi_string(str_buff, buf_len_prt[0])
 
-        r3.r3_match_entry_fetch_tokens(entry, i, str_buff, buf_len_prt)
-        local val = ffi_string(str_buff, buf_len_prt[0])
+            r3.r3_match_entry_fetch_tokens(entry, i, str_buff, buf_len_prt)
+            local val = ffi_string(str_buff, buf_len_prt[0])
 
-        if key == "" then
-            idx = idx + 1
-            params[idx] = val
+            if key == "" then
+                idx = idx + 1
+                params[idx] = val
 
-        else
-            params[key] = val
+            else
+                params[key] = val
+            end
         end
     end
 
@@ -300,6 +313,11 @@ function _M.match_route(self, uri, opts, ...)
     -- execute block
     block(params, ...)
     return true
+end
+
+function _M.match_route(self, uri, opts, ...)
+    local params = new_tab(0, 4)
+    return match_route(self, uri, opts, params, ...)
 end
 
 ----------------------------------------------------------------
@@ -376,14 +394,8 @@ end
 
 
 local opts_method = {}
-local function dispatch2(self, params, uri, method_or_opts, ...)
-    local opts = method_or_opts
-    if type(method_or_opts) == "string" then
-        opts_method.method = method_or_opts
-        opts = opts_method
-    end
-
-    if self.hash_uri[uri] then
+local function dispatch2(self, params, uri, opts, ...)
+    if not self.disable_uri_cache_opt and self.hash_uri[uri] then
         local method = opts and opts.method
         local route = self.hash_uri[uri]
         if route.bit_methods ~= 0 and
@@ -419,9 +431,19 @@ local function dispatch2(self, params, uri, method_or_opts, ...)
         return true
     end
 
-    return self:match_route(uri, opts, ...)
+    return match_route(self, uri, opts, params, ...)
 end
-_M.dispatch2 = dispatch2
+
+
+function _M.dispatch2(self, params, uri, method_or_opts, ...)
+    local opts = method_or_opts
+    if type(method_or_opts) == "string" then
+        opts_method.method = method_or_opts
+        opts = opts_method
+    end
+
+    return dispatch2(self, params, uri, opts, ...)
+end
 
 
 
