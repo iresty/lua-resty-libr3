@@ -1,15 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use t::R3;
-
-my $pwd = `pwd`;
-chomp $pwd;
-
-if($pwd =~ m{^/home/travis}) {
-    plan(skip_all => "fix me: https://github.com/iresty/lua-resty-libr3/issues/13");
-} else {
-    plan('no_plan');
-}
+use t::R3 'no_plan';
 
 run_tests();
 
