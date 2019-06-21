@@ -2,6 +2,7 @@
 
 local base        = require("resty.core.base")
 local clear_tab   = require("table.clear")
+local clone_tab   = require("table.clone")
 local str_buff    = base.get_string_buf(256)
 local buf_len_prt = base.get_size_ptr()
 local new_tab     = base.new_tab
@@ -110,11 +111,6 @@ end
 
 
 local function gc_free(self)
-    for _, r3_node in ipairs(self.r3_nodes) do
-        r3.r3_route_attribute_free(r3_node)
-    end
-
-    clear_tab(self.r3_nodes)
     self:free()
 end
 
@@ -123,13 +119,13 @@ local mt = { __index = _M, __gc = gc_free }
 
 
 local bit = require "bit"
-local _METHOD_GET     = 2;
-local _METHOD_POST    = bit.lshift(2,1);
-local _METHOD_PUT     = bit.lshift(2,2);
-local _METHOD_DELETE  = bit.lshift(2,3);
-local _METHOD_PATCH   = bit.lshift(2,4);
-local _METHOD_HEAD    = bit.lshift(2,5);
-local _METHOD_OPTIONS = bit.lshift(2,6);
+local _METHOD_GET     = 2
+local _METHOD_POST    = bit.lshift(2,1)
+local _METHOD_PUT     = bit.lshift(2,2)
+local _METHOD_DELETE  = bit.lshift(2,3)
+local _METHOD_PATCH   = bit.lshift(2,4)
+local _METHOD_HEAD    = bit.lshift(2,5)
+local _METHOD_OPTIONS = bit.lshift(2,6)
 
 
 local _METHODS = {
@@ -155,6 +151,8 @@ local function insert_route(self, opts)
     if not method or not uri or not handler then
         return nil, "invalid argument of route"
     end
+
+    insert_tab(self.cached_route_conf, clone_tab(opts))
 
     if not self.disable_uri_cache_opt
        and not find_str(uri, [[{]], 1, true) then
@@ -213,6 +211,7 @@ function _M.new(routes, opts)
                             match_data_index = 0,
                             match_data = new_tab(route_n, 0),
                             disable_uri_cache_opt = disable_uri_cache_opt,
+                            cached_route_conf = new_tab(128, 0),
                             }, mt)
 
     if not routes then return self end
@@ -272,6 +271,10 @@ function _M.free(self)
 
     r3.r3_free(self.tree)
     self.tree = nil
+
+    for _, r3_node in ipairs(self.r3_nodes) do
+        r3.r3_route_attribute_free(r3_node)
+    end
 end
 
 
@@ -459,7 +462,8 @@ function _M.dispatch2(self, params, uri, method_or_opts, ...)
         opts = opts_method
     end
 
-    return dispatch2(self, params, uri, opts, ...)
+    local ok = dispatch2(self, params, uri, opts, ...)
+    return ok
 end
 
 
@@ -472,7 +476,8 @@ function _M.dispatch(self, uri, method_or_opts, ...)
         opts = opts_method
     end
 
-    return dispatch2(self, {}, uri, opts, ...)
+    local ok = dispatch2(self, {}, uri, opts, ...)
+    return ok
 end
 
 
