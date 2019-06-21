@@ -123,13 +123,13 @@ local mt = { __index = _M, __gc = gc_free }
 
 
 local bit = require "bit"
-local _METHOD_GET     = 2;
-local _METHOD_POST    = bit.lshift(2,1);
-local _METHOD_PUT     = bit.lshift(2,2);
-local _METHOD_DELETE  = bit.lshift(2,3);
-local _METHOD_PATCH   = bit.lshift(2,4);
-local _METHOD_HEAD    = bit.lshift(2,5);
-local _METHOD_OPTIONS = bit.lshift(2,6);
+local _METHOD_GET     = 2
+local _METHOD_POST    = bit.lshift(2,1)
+local _METHOD_PUT     = bit.lshift(2,2)
+local _METHOD_DELETE  = bit.lshift(2,3)
+local _METHOD_PATCH   = bit.lshift(2,4)
+local _METHOD_HEAD    = bit.lshift(2,5)
+local _METHOD_OPTIONS = bit.lshift(2,6)
 
 
 local _METHODS = {
@@ -155,6 +155,8 @@ local function insert_route(self, opts)
     if not method or not uri or not handler then
         return nil, "invalid argument of route"
     end
+
+    insert_tab(self.cached_route_conf, opts)
 
     if not self.disable_uri_cache_opt
        and not find_str(uri, [[{]], 1, true) then
@@ -213,6 +215,7 @@ function _M.new(routes, opts)
                             match_data_index = 0,
                             match_data = new_tab(route_n, 0),
                             disable_uri_cache_opt = disable_uri_cache_opt,
+                            cached_route_conf = new_tab(128, 0),
                             }, mt)
 
     if not routes then return self end

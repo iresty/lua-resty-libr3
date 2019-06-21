@@ -17,8 +17,9 @@ __DATA__
 
 === TEST 1: create r3 object by `new`
 --- config
-    location /foo {
-        content_by_lua_block {
+location /foo {
+    content_by_lua_block {
+        local function test()
             -- foo handler
             local function foo(params)
                 ngx.say("foo: ", require("cjson").encode(params))
@@ -27,6 +28,11 @@ __DATA__
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
+                {
+                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    host = "localhost",
+                    handler = foo,
+                },
                 {
                     uri = [[/foo/{:\w+}/{:\w+}]],
                     host = "localhost",
@@ -46,13 +52,26 @@ __DATA__
             else
                 ngx.say("not hit")
             end
-        }
+        end
+
+        for i = 1, 5 do
+            test()
+        end
     }
+}
 --- request
 GET /foo/idv/namev
 --- no_error_log
 [error]
 --- response_body
+foo: ["idv","namev"]
+hit
+foo: ["idv","namev"]
+hit
+foo: ["idv","namev"]
+hit
+foo: ["idv","namev"]
+hit
 foo: ["idv","namev"]
 hit
 
