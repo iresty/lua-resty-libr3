@@ -148,6 +148,10 @@ local function insert_route(self, opts)
     local remote_addr = opts.remote_addr or "0.0.0.0"
     local remote_addr_bits = tonumber(opts.remote_addr_bits) or 0
 
+    if type(uri) ~= "string" then
+        error("invalid argument uri")
+    end
+
     if not method or not uri or not handler then
         return nil, "invalid argument of route"
     end
@@ -238,6 +242,10 @@ function _M.new(routes, opts)
         route_opts.uri     = route.uri
         route_opts.host    = route.host
         route_opts.handler = route.handler
+
+        if type(route.uri) ~= "string" then
+            error("invalid argument uri", 2)
+        end
 
         if route.remote_addr then
             local idx = find_str(route.remote_addr, "/", 1, true)
@@ -456,6 +464,10 @@ end
 
 
 function _M.dispatch2(self, params, uri, method_or_opts, ...)
+    if type(uri) ~= "string" then
+        error("invalid argument uri", 2)
+    end
+
     local opts = method_or_opts
     if not method_or_opts or type(method_or_opts) == "string" then
         clear_tab(opts_method)
@@ -470,6 +482,10 @@ end
 
 
 function _M.dispatch(self, uri, method_or_opts, ...)
+    if type(uri) ~= "string" then
+        error("invalid argument uri", 2)
+    end
+
     -- use dispatch2 is better, avoid temporary table
     local opts = method_or_opts
     if not method_or_opts or type(method_or_opts) == "string" then

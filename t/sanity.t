@@ -428,3 +428,93 @@ foo: {"name":"b","id":"a"}
 hit
 foo: null
 hit
+
+
+
+=== TEST 11: dispatch: invalid uri
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            r:get("/foo", bar)
+
+            -- don't forget!
+            r:compile()
+
+            r:dispatch(nil)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument uri
+
+
+
+=== TEST 12: dispatch: invalid uri
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            r:get("/foo", bar)
+
+            -- don't forget!
+            r:compile()
+
+            r:dispatch2({}, nil)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument uri
+
+
+
+=== TEST 13: new: invalid uri
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, uri = nil, handler = foo}
+            })
+
+            r:get("/foo", bar)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument uri
+
+
+
+=== TEST 14: insert route: invalid uri
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, uri = "/foo", handler = foo}
+            })
+
+            r:get(nil, bar)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument uri
