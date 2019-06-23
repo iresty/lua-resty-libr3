@@ -373,3 +373,58 @@ hit
 post: {}
 hit
 not hit
+
+
+
+=== TEST 10: no method in dispatch
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+            local function bar(params)
+                ngx.say("bar: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            -- insert route
+            r:get("/", function(params)
+                ngx.say("hello r3!")
+            end)
+
+            r:get("/foo", bar)
+            r:get("/foo/{id}/{name}", foo)
+            r:post("/foo/{id}/{name}", bar)
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch(ngx.var.uri)
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+
+            local ok = r:dispatch2(nil, ngx.var.uri)
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo/a/b
+--- no_error_log
+[error]
+--- response_body
+foo: {"name":"b","id":"a"}
+hit
+foo: null
+hit

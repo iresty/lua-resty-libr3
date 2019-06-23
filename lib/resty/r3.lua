@@ -457,7 +457,8 @@ end
 
 function _M.dispatch2(self, params, uri, method_or_opts, ...)
     local opts = method_or_opts
-    if type(method_or_opts) == "string" then
+    if not method_or_opts or type(method_or_opts) == "string" then
+        clear_tab(opts_method)
         opts_method.method = method_or_opts
         opts = opts_method
     end
@@ -471,7 +472,8 @@ end
 function _M.dispatch(self, uri, method_or_opts, ...)
     -- use dispatch2 is better, avoid temporary table
     local opts = method_or_opts
-    if type(method_or_opts) == "string" then
+    if not method_or_opts or type(method_or_opts) == "string" then
+        clear_tab(opts_method)
         opts_method.method = method_or_opts
         opts = opts_method
     end
