@@ -367,44 +367,35 @@ for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD",
 end
 
 
-function _M.insert_route(self, ...)
+function _M.insert_route(self, path, handler, opts)
     -- method, path, handler
-    local nargs = select('#', ...)
-    if nargs <= 1 then
-        error("only got " .. nargs .. " but expect 2 or more", 2)
+    if type(path) ~= "string" then
+        error("invalid argument path", 2)
     end
 
-    local handler = select(nargs, ...)
     if type(handler) ~= "function" then
-        error("expected function but got " .. type(handler), 2)
+        error("invalid argument handler", 2)
     end
 
-    local method, path, host
+    if opts and type(handler) ~= "table" then
+        error("invalid argument opts", 2)
+    end
+
+    local method
+    local host
     local remote_addr
     local remote_addr_bits
-    if nargs == 2 then
-        local path_or_opts = select(1, ...)
-        if type(path_or_opts) == "table" then
-            local opts = path_or_opts
-            method = opts.method
-            path   = opts.path
-            host   = opts.host
-            remote_addr      = opts.remote_addr
-            remote_addr_bits = opts.remote_addr_bits
-
-        else
-            method = 0
-            path = path_or_opts
-        end
-
-    elseif nargs == 3 then
-        method = select(1, ...)
-        path = select(2, ...)
+    if opts then
+        method = opts.method
+        path   = opts.path
+        host   = opts.host
+        remote_addr      = opts.remote_addr
+        remote_addr_bits = opts.remote_addr_bits
     end
 
     local bit_methods
     if type(method) ~= "table" then
-        bit_methods = _METHODS[method] or 0
+        bit_methods = method and _METHODS[method] or 0
 
     else
         bit_methods = 0
@@ -414,10 +405,11 @@ function _M.insert_route(self, ...)
     end
 
     clear_tab(route_opts)
-    route_opts.method = bit_methods
     route_opts.path = path
-    route_opts.host = host
     route_opts.handler = handler
+
+    route_opts.method = bit_methods
+    route_opts.host = host
     route_opts.remote_addr = remote_addr
     route_opts.remote_addr_bits = remote_addr_bits
     return insert_route(self, route_opts)

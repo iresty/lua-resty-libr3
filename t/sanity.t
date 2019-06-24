@@ -533,3 +533,50 @@ GET /foo/a/b
 --- error_code: 500
 --- error_log
 invalid argument path
+
+
+
+=== TEST 15: new: invalid hanlder
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, path = "/foo", handler = nil}
+            })
+
+            r:get("/foo", bar)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument handler
+
+
+
+=== TEST 16: new: invalid hanlder
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, path = "/foo", handler = foo}
+            })
+
+            r:get("/foo", nil)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument handler

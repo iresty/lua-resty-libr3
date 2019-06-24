@@ -71,7 +71,7 @@ Creates a r3 object. In case of failures, returns `nil` and a string describing 
 The routes is a array table, like `{ {...}, {...}, {...} }`, Each element in the array is a route, which is a hash table.
 
 The attributes of each element may contain these:
-* `uri`: client request uri.
+* `path`: client request uri.
 * `handler`: Lua callback function.
 * `host`: optional, client request host, not only supports normal domain name, but also supports wildcard name, both `foo.com` and `*.foo.com` are valid.
 * `remote_addr`: optional, client remote address like `192.168.1.100`, and we can use CIDR format, eg `192.168.1.0/24`.
@@ -89,22 +89,22 @@ end
 local r3route = require "resty.r3"
 local r3 = r3route.new({
         {
-            uri = [[/foo/{:\w+}/{:\w+}"]],
+            path = [[/foo/{:\w+}/{:\w+}"]],
             method = {"GET"},
             handler = foo
         },
         {
-            uri = [[/bar/{:\w+}/{:\w+}]],
+            path = [[/bar/{:\w+}/{:\w+}]],
             host = "*.bar.com",
             handler = foo
         },
         {
-            uri = [[/alice/{:\w+}/{:\w+}]],
+            path = [[/alice/{:\w+}/{:\w+}]],
             remote_addr = "192.168.1.0/24",
             handler = foo
         },
         {
-            uri = [[/bob/{:\w+}/{:\w+}]],
+            path = [[/bob/{:\w+}/{:\w+}]],
             method = {"GET"},
             host = "*.bob.com",
             remote_addr = "192.168.1.0/24",
@@ -118,19 +118,16 @@ local r3 = r3route.new({
 insert_route
 ------------
 
-`syntax: r3, err = r3:insert_route(uri, callback)`
+`syntax: r3, err = r3:insert_route(path, callback, opts)`
 
-`syntax: r3, err = r3:insert_route({uri=..., method=..., host=...}, callback)`
+* `path`: Client request uri.
+* `callback`: Lua callback function.
 
-`syntax: r3, err = r3:insert_route(method, uri, callback)`
-
-The option can be a Lua table.
-
+`opts` is optional argument, it is a Lua table.
 * `method`: It's an array table, we can put one or more method names together.
-* `uri`: Client request uri.
 * `host`: optional, client request host, not only supports normal domain name, but also supports wildcard name, both `foo.com` and `*.foo.com` are valid.
 * `remote_addr`: optional, client remote address like `192.168.1.100`, and we can use CIDR format, eg `192.168.1.0/24`.
-* `callback`: Lua callback function.
+
 
 ```lua
 -- route
@@ -142,8 +139,7 @@ local r3route = require "resty.r3"
 local r3 = r3route.new()
 
 r3:insert_route("/a", foo)
-r3:insert_route({"GET", "POST"}, "/a", foo)
-r3:insert_route({method = {"GET"}, uri = "/a"}, foo)
+r3:insert_route("/b", foo, {method = {"GET"}})
 ```
 
 add router
@@ -180,20 +176,20 @@ It compiles our route paths into a prefix tree (trie). You must compile after ad
 dispatch
 --------
 
-`syntax: ok = r3:dispatch(uri, method)`
+`syntax: ok = r3:dispatch(path, method)`
 
-* `uri`: client request uri.
+* `path`: client request uri.
 * `method`: method name of client request.
 
-`syntax: ok = r3:dispatch(uri, opts)`
+`syntax: ok = r3:dispatch(path, opts)`
 
-* `uri`: client request uri.
+* `path`: client request uri.
 * `opts`: a Lua tale
     * `method`: optional, method name of client request.
     * `host`: optional, client request host, not only supports normal domain name, but also supports wildcard name, both `foo.com` and `*.foo.com` are valid.
     * `remote_addr`: optional, client remote address like `192.168.1.100`, and we can use CIDR format, eg `192.168.1.0/24`.
 
-Dispatchs the path to the controller by `method`, `uri` and `host`.
+Dispatchs the path to the controller by `method`, `path` and `host`.
 
 ```lua
 local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
@@ -204,9 +200,9 @@ local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
 dispatch2
 ---------
 
-`syntax: ok = r3:dispatch2(param_tab, uri, method)`
+`syntax: ok = r3:dispatch2(param_tab, path, method)`
 
-`syntax: ok = r3:dispatch2(param_tab, uri, opts)`
+`syntax: ok = r3:dispatch2(param_tab, path, opts)`
 
 Basically the same as `dispatch`, support for passing in a `table` object to
 store parsing parameters, makes it easier to reuse lua table.
