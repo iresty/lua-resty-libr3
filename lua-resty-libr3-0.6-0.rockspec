@@ -2,7 +2,7 @@ package = "lua-resty-libr3"
 version = "0.6-0"
 source = {
     url = "git://github.com/iresty/lua-resty-libr3",
-    tag = "0.6",
+    tag = "v0.6",
 }
 
 description = {
