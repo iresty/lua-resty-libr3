@@ -108,7 +108,7 @@ hit
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {method = {"GET"}, uri = [[/foo/{:\w+}/{:\w+}]], handler = foo}
+                {method = {"GET"}, path = [[/foo/{:\w+}/{:\w+}]], handler = foo}
             })
 
             r:compile()
@@ -143,7 +143,7 @@ hit
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {uri = [[/foo/{:\w+}/{:\w+}]], handler = foo}
+                {path = [[/foo/{:\w+}/{:\w+}]], handler = foo}
             })
 
             -- don't forget!
@@ -293,7 +293,7 @@ hit
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {method = {"GET"}, uri = "/bar", handler = bar}
+                {method = {"GET"}, path = "/bar", handler = bar}
             })
 
             r:compile()
@@ -431,15 +431,20 @@ hit
 
 
 
-=== TEST 11: dispatch: invalid uri
+=== TEST 11: dispatch: invalid path
 --- config
     location /foo {
         content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new()
 
-            r:get("/foo", bar)
+            r:get("/foo", foo)
 
             -- don't forget!
             r:compile()
@@ -451,19 +456,24 @@ hit
 GET /foo/a/b
 --- error_code: 500
 --- error_log
-invalid argument uri
+invalid argument path
 
 
 
-=== TEST 12: dispatch: invalid uri
+=== TEST 12: dispatch: invalid path
 --- config
     location /foo {
         content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new()
 
-            r:get("/foo", bar)
+            r:get("/foo", foo)
 
             -- don't forget!
             r:compile()
@@ -475,18 +485,18 @@ invalid argument uri
 GET /foo/a/b
 --- error_code: 500
 --- error_log
-invalid argument uri
+invalid argument path
 
 
 
-=== TEST 13: new: invalid uri
+=== TEST 13: new: invalid path
 --- config
     location /foo {
         content_by_lua_block {
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {method = {"GET"}, uri = nil, handler = foo}
+                {method = {"GET"}, path = nil, handler = foo}
             })
 
             r:get("/foo", bar)
@@ -496,18 +506,23 @@ invalid argument uri
 GET /foo/a/b
 --- error_code: 500
 --- error_log
-invalid argument uri
+invalid argument path
 
 
 
-=== TEST 14: insert route: invalid uri
+=== TEST 14: insert route: invalid path
 --- config
     location /foo {
         content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {method = {"GET"}, uri = "/foo", handler = foo}
+                {method = {"GET"}, path = "/foo", handler = foo}
             })
 
             r:get(nil, bar)
@@ -517,4 +532,4 @@ invalid argument uri
 GET /foo/a/b
 --- error_code: 500
 --- error_log
-invalid argument uri
+invalid argument path

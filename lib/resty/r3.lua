@@ -142,24 +142,28 @@ local _METHODS = {
 local route_opts = {}
 local function insert_route(self, opts)
     local method  = opts.method
-    local uri     = opts.uri
+    local path    = opts.path
     local host    = opts.host
     local handler = opts.handler
     local remote_addr = opts.remote_addr or "0.0.0.0"
     local remote_addr_bits = tonumber(opts.remote_addr_bits) or 0
 
-    if type(uri) ~= "string" then
-        error("invalid argument uri")
+    if type(path) ~= "string" then
+        error("invalid argument path")
     end
 
-    if not method or not uri or not handler then
+    if type(handler) ~= "function" then
+        error("invalid argument handler")
+    end
+
+    if not method or not path or not handler then
         return nil, "invalid argument of route"
     end
 
     insert_tab(self.cached_route_conf, clone_tab(opts))
 
-    if not self.disable_uri_cache_opt
-       and not find_str(uri, [[{]], 1, true) then
+    if not self.disable_path_cache_opt
+       and not find_str(path, [[{]], 1, true) then
         local host_is_wildcard
         local host_wildcard
         if host and host:sub(1, 1) == '*' then
@@ -167,7 +171,7 @@ local function insert_route(self, opts)
             host_wildcard = host:sub(2):reverse()
         end
 
-        local uri_cache = {
+        local path_cache = {
             bit_methods = method,
             host_is_wildcard = host_is_wildcard,
             host_wildcard = host_wildcard,
@@ -177,11 +181,11 @@ local function insert_route(self, opts)
             handler = handler,
         }
 
-        if not self.hash_uri[uri] then
-            self.hash_uri[uri] = {uri_cache}
+        if not self.hash_path[path] then
+            self.hash_path[path] = {path_cache}
 
         else
-            insert_tab(self.hash_uri[uri], uri_cache)
+            insert_tab(self.hash_path[path], path_cache)
         end
 
         return true
@@ -192,7 +196,7 @@ local function insert_route(self, opts)
     local dataptr = ffi_cast('void *',
                              ffi_cast('intptr_t', self.match_data_index))
 
-    local r3_node = r3.r3_insert(self.tree, method, uri, #uri, dataptr, nil)
+    local r3_node = r3.r3_insert(self.tree, method, path, #path, dataptr, nil)
     local ret = r3.r3_route_set_attr(r3_node, host, remote_addr,
                                      remote_addr_bits)
     if ret == -1 then
@@ -206,15 +210,15 @@ end
 
 function _M.new(routes, opts)
     local route_n = routes and #routes or 10
-    local disable_uri_cache_opt = opts and opts.disable_uri_cache_opt
+    local disable_path_cache_opt = opts and opts.disable_path_cache_opt
 
     local self = setmt__gc({
                             tree = r3.r3_create(route_n),
-                            hash_uri = new_tab(0, route_n),
+                            hash_path = new_tab(0, route_n),
                             r3_nodes = new_tab(128, 0),
                             match_data_index = 0,
                             match_data = new_tab(route_n, 0),
-                            disable_uri_cache_opt = disable_uri_cache_opt,
+                            disable_path_cache_opt = disable_path_cache_opt,
                             cached_route_conf = new_tab(128, 0),
                             }, mt)
 
@@ -239,12 +243,12 @@ function _M.new(routes, opts)
 
         clear_tab(route_opts)
         route_opts.method  = bit_methods
-        route_opts.uri     = route.uri
+        route_opts.path     = route.path
         route_opts.host    = route.host
         route_opts.handler = route.handler
 
-        if type(route.uri) ~= "string" then
-            error("invalid argument uri", 2)
+        if type(route.path) ~= "string" then
+            error("invalid argument path", 2)
         end
 
         if route.remote_addr then
@@ -286,11 +290,11 @@ function _M.free(self)
 end
 
 
-local function match_route(self, uri, opts, params, ...)
+local function match_route(self, path, opts, params, ...)
     local method = opts.method
     method = _METHODS[method] or 0
 
-    local entry = r3.r3_match_entry_create(uri, method, opts.host,
+    local entry = r3.r3_match_entry_create(path, method, opts.host,
                                            opts.remote_addr)
     local matched_route = r3.r3_match_route(self.tree, entry)
     if matched_route == nil then
@@ -334,9 +338,9 @@ local function match_route(self, uri, opts, params, ...)
     return true
 end
 
-function _M.match_route(self, uri, opts, ...)
+function _M.match_route(self, path, opts, ...)
     local params = new_tab(0, 4)
-    return match_route(self, uri, opts, params, ...)
+    return match_route(self, path, opts, params, ...)
 end
 
 ----------------------------------------------------------------
@@ -345,10 +349,18 @@ end
 for _, name in ipairs({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD",
                        "OPTIONS"}) do
     local l_name = string.lower(name)
-    _M[l_name] = function (self, uri, handler)
+    _M[l_name] = function (self, path, handler)
+        if type(path) ~= "string" then
+            error("invalid argument path")
+        end
+
+        if type(handler) ~= "function" then
+            error("invalid argument handler")
+        end
+
         clear_tab(route_opts)
-        route_opts.method = _METHODS[name]
-        route_opts.uri = uri
+        route_opts.method  = _METHODS[name]
+        route_opts.path    = path
         route_opts.handler = handler
         return insert_route(self, route_opts)
     end
@@ -367,27 +379,27 @@ function _M.insert_route(self, ...)
         error("expected function but got " .. type(handler), 2)
     end
 
-    local method, uri, host
+    local method, path, host
     local remote_addr
     local remote_addr_bits
     if nargs == 2 then
-        local uri_or_opts = select(1, ...)
-        if type(uri_or_opts) == "table" then
-            local opts = uri_or_opts
+        local path_or_opts = select(1, ...)
+        if type(path_or_opts) == "table" then
+            local opts = path_or_opts
             method = opts.method
-            uri    = opts.uri
+            path   = opts.path
             host   = opts.host
             remote_addr      = opts.remote_addr
             remote_addr_bits = opts.remote_addr_bits
 
         else
             method = 0
-            uri = uri_or_opts
+            path = path_or_opts
         end
 
     elseif nargs == 3 then
         method = select(1, ...)
-        uri = select(2, ...)
+        path = select(2, ...)
     end
 
     local bit_methods
@@ -403,7 +415,7 @@ function _M.insert_route(self, ...)
 
     clear_tab(route_opts)
     route_opts.method = bit_methods
-    route_opts.uri = uri
+    route_opts.path = path
     route_opts.host = host
     route_opts.handler = handler
     route_opts.remote_addr = remote_addr
@@ -412,7 +424,7 @@ function _M.insert_route(self, ...)
 end
 
 
-local function match_by_uri_cache(route, params, opts, ...)
+local function match_by_path_cache(route, params, opts, ...)
     local method = opts and opts.method
     if route.bit_methods ~= 0 and
         bit.band(route.bit_methods, _METHODS[method]) == 0 then
@@ -449,23 +461,23 @@ end
 
 
 local opts_method = {}
-local function dispatch2(self, params, uri, opts, ...)
-    if not self.disable_uri_cache_opt and self.hash_uri[uri] then
-        for _, route in ipairs(self.hash_uri[uri]) do
-            local ok = match_by_uri_cache(route, params, opts, ...)
+local function dispatch2(self, params, path, opts, ...)
+    if not self.disable_path_cache_opt and self.hash_path[path] then
+        for _, route in ipairs(self.hash_path[path]) do
+            local ok = match_by_path_cache(route, params, opts, ...)
             if ok then
                 return ok
             end
         end
     end
 
-    return match_route(self, uri, opts, params, ...)
+    return match_route(self, path, opts, params, ...)
 end
 
 
-function _M.dispatch2(self, params, uri, method_or_opts, ...)
-    if type(uri) ~= "string" then
-        error("invalid argument uri", 2)
+function _M.dispatch2(self, params, path, method_or_opts, ...)
+    if type(path) ~= "string" then
+        error("invalid argument path", 2)
     end
 
     local opts = method_or_opts
@@ -475,15 +487,15 @@ function _M.dispatch2(self, params, uri, method_or_opts, ...)
         opts = opts_method
     end
 
-    local ok = dispatch2(self, params, uri, opts, ...)
+    local ok = dispatch2(self, params, path, opts, ...)
     return ok
 end
 
 
 
-function _M.dispatch(self, uri, method_or_opts, ...)
-    if type(uri) ~= "string" then
-        error("invalid argument uri", 2)
+function _M.dispatch(self, path, method_or_opts, ...)
+    if type(path) ~= "string" then
+        error("invalid argument path", 2)
     end
 
     -- use dispatch2 is better, avoid temporary table
@@ -494,7 +506,7 @@ function _M.dispatch(self, uri, method_or_opts, ...)
         opts = opts_method
     end
 
-    local ok = dispatch2(self, {}, uri, opts, ...)
+    local ok = dispatch2(self, {}, path, opts, ...)
     return ok
 end
 
