@@ -20,7 +20,7 @@ __DATA__
 
             -- r3 router
             local r3router = require "resty.r3"
-            local r = r3router.new(nil, {disable_uri_cache_opt = true})
+            local r = r3router.new(nil, {disable_path_cache_opt = true})
 
             -- insert route
             r:get("/foo", foo)
@@ -68,10 +68,10 @@ hit
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                    {method = {"GET"}, uri = "/bar", handler = bar}
+                    {method = {"GET"}, path = "/bar", handler = bar}
                 },
                 {
-                    disable_uri_cache_opt = true
+                    disable_path_cache_opt = true
                 }
             )
 
@@ -98,7 +98,7 @@ passed parameter table: true
 
 
 
-=== TEST 3: multiple routes: same uri, different method
+=== TEST 3: multiple routes: same path, different method
 --- config
     location /foo {
         content_by_lua_block {
@@ -112,7 +112,7 @@ passed parameter table: true
 
             -- r3 router
             local r3router = require "resty.r3"
-            local r = r3router.new(nil, {disable_uri_cache_opt=false})
+            local r = r3router.new(nil, {disable_path_cache_opt=false})
 
             -- insert route
             r:post("/foo", post)

@@ -20,7 +20,7 @@ location /foo {
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     host = "localhost",
                     handler = foo,
                 }

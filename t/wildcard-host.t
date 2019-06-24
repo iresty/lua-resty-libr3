@@ -19,7 +19,7 @@ __DATA__
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     host = "*.foo.com",
                     handler = foo,
                 }
@@ -62,7 +62,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     host = "*.foo.com",
                     handler = foo,
                 }
@@ -107,17 +107,17 @@ not hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     host = "*.bar.com",
                     handler = bar,
                 },
                 {
-                    uri = [[/bar/{:\w+}/{:\w+}]],
+                    path = [[/bar/{:\w+}/{:\w+}]],
                     host = "*.foo.com",
                     handler = bar,
                 },
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     host = "*.foo.com",
                     handler = foo,
                 }
@@ -159,7 +159,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
+                    path = [[/foo/idv/namev]],
                     host = "*.foo.com",
                     handler = foo,
                 }
@@ -202,7 +202,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
+                    path = [[/foo/idv/namev]],
                     host = "*.foo.com",
                     handler = foo,
                 }

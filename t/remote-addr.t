@@ -19,7 +19,7 @@ __DATA__
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     remote_addr = "127.0.0.1",
                     handler = foo,
                 }
@@ -60,7 +60,7 @@ not hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     remote_addr = "127.0.0.1",
                     handler = foo,
                 }
@@ -103,7 +103,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     remote_addr = "127.0.0.0/24",
                     handler = foo,
                 }
@@ -146,7 +146,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     remote_addr = "127.0.0.0/24",
                     handler = foo,
                 }
@@ -188,7 +188,7 @@ not hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
+                    path = [[/foo/idv/namev]],
                     remote_addr = "127.0.0.1",
                     handler = foo,
                 }
@@ -231,7 +231,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
+                    path = [[/foo/idv/namev]],
                     remote_addr = "127.0.0.0/24",
                     handler = foo,
                 }
@@ -274,7 +274,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
+                    path = [[/foo/idv/namev]],
                     remote_addr = "127.0.0.0/24",
                     handler = foo,
                 }
@@ -316,7 +316,7 @@ not hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
+                    path = [[/foo/idv/namev]],
                     remote_addr = "127.0.0.1",
                     handler = foo,
                 }

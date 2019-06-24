@@ -19,15 +19,15 @@ __DATA__
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     host = "localhost",
                     handler = foo,
                 },
                 {
                     method = {"GET", "POST"},
-                    uri = [[/bar/{:\w+}/{:\w+}]],
+                    path = [[/bar/{:\w+}/{:\w+}]],
                     host = "localhost",
-                    handler = bar,
+                    handler = foo,
                 }
             })
 
@@ -66,7 +66,7 @@ hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/{:\w+}/{:\w+}]],
+                    path = [[/foo/{:\w+}/{:\w+}]],
                     host = "not_found_host",
                     handler = foo,
                 }
@@ -105,7 +105,7 @@ not hit
             local r3router = require "resty.r3"
             local r = r3router.new({
                 {
-                    uri = [[/foo/idv/namev]],
+                    path = [[/foo/idv/namev]],
                     host = "localhost",
                     handler = foo,
                 }

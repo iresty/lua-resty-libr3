@@ -108,7 +108,7 @@ hit
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {method = {"GET"}, uri = [[/foo/{:\w+}/{:\w+}]], handler = foo}
+                {method = {"GET"}, path = [[/foo/{:\w+}/{:\w+}]], handler = foo}
             })
 
             r:compile()
@@ -143,7 +143,7 @@ hit
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {uri = [[/foo/{:\w+}/{:\w+}]], handler = foo}
+                {path = [[/foo/{:\w+}/{:\w+}]], handler = foo}
             })
 
             -- don't forget!
@@ -293,7 +293,7 @@ hit
             -- r3 router
             local r3router = require "resty.r3"
             local r = r3router.new({
-                {method = {"GET"}, uri = "/bar", handler = bar}
+                {method = {"GET"}, path = "/bar", handler = bar}
             })
 
             r:compile()
@@ -428,3 +428,155 @@ foo: {"name":"b","id":"a"}
 hit
 foo: null
 hit
+
+
+
+=== TEST 11: dispatch: invalid path
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            r:get("/foo", foo)
+
+            -- don't forget!
+            r:compile()
+
+            r:dispatch(nil)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument path
+
+
+
+=== TEST 12: dispatch: invalid path
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            r:get("/foo", foo)
+
+            -- don't forget!
+            r:compile()
+
+            r:dispatch2({}, nil)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument path
+
+
+
+=== TEST 13: new: invalid path
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, path = nil, handler = foo}
+            })
+
+            r:get("/foo", bar)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument path
+
+
+
+=== TEST 14: insert route: invalid path
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, path = "/foo", handler = foo}
+            })
+
+            r:get(nil, bar)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument path
+
+
+
+=== TEST 15: new: invalid hanlder
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, path = "/foo", handler = nil}
+            })
+
+            r:get("/foo", bar)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument handler
+
+
+
+=== TEST 16: new: invalid hanlder
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {method = {"GET"}, path = "/foo", handler = foo}
+            })
+
+            r:get("/foo", nil)
+        }
+    }
+--- request
+GET /foo/a/b
+--- error_code: 500
+--- error_log
+invalid argument handler
