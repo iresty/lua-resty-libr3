@@ -22,7 +22,6 @@ local setmetatable=setmetatable
 local ngx_log     = ngx.log
 local ngx_ERR     = ngx.ERR
 local type        = type
-local select      = select
 local error       = error
 local newproxy    = _G.newproxy
 local str_sub     = string.sub
@@ -228,11 +227,18 @@ function _M.new(routes, opts)
     for i = 1, route_n do
         local route = routes[i]
 
-        local method  = route.method
+        if type(route.path) ~= "string" then
+            error("invalid argument path", 2)
+        end
 
+        if type(route.handler) ~= "function" then
+            error("invalid argument handler", 2)
+        end
+
+        local method  = route.method
         local bit_methods
         if type(method) ~= "table" then
-            bit_methods = _METHODS[method] or 0
+            bit_methods = method and _METHODS[method] or 0
 
         else
             bit_methods = 0
@@ -242,14 +248,10 @@ function _M.new(routes, opts)
         end
 
         clear_tab(route_opts)
-        route_opts.method  = bit_methods
-        route_opts.path     = route.path
-        route_opts.host    = route.host
+        route_opts.path    = route.path
         route_opts.handler = route.handler
-
-        if type(route.path) ~= "string" then
-            error("invalid argument path", 2)
-        end
+        route_opts.method  = bit_methods
+        route_opts.host    = route.host
 
         if route.remote_addr then
             local idx = find_str(route.remote_addr, "/", 1, true)
