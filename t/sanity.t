@@ -580,3 +580,58 @@ GET /foo/a/b
 --- error_code: 500
 --- error_log
 invalid argument handler
+
+
+
+=== TEST 17: any uri
+--- config
+    location /foo {
+        content_by_lua_block {
+            local function bar(params)
+                ngx.say("bar: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            -- insert route
+            r:get("{:.*}", function(params)
+                ngx.say("hello r3!")
+            end)
+
+            r:get("/foo", bar)
+
+            -- don't forget!
+            r:compile()
+
+            for i = 1, 3 do
+                local ok = r:dispatch(ngx.var.uri, ngx.req.get_method())
+                if ok then
+                    ngx.say("hit")
+                else
+                    ngx.say("not hit")
+                end
+            end
+
+            local ok = r:dispatch("/", ngx.req.get_method())
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo/a/b
+--- no_error_log
+[error]
+--- response_body
+hello r3!
+hit
+hello r3!
+hit
+hello r3!
+hit
+hello r3!
+hit
