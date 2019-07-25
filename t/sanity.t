@@ -635,3 +635,49 @@ hello r3!
 hit
 hello r3!
 hit
+
+
+
+=== TEST 18: use `/foo{:/?}` both to match `/foo` and `/foo/`
+--- config
+    location /t {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new()
+
+            -- insert route
+            r:get("/foo{:/?}", foo)
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch("/foo", ngx.req.get_method())
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+
+            ok = r:dispatch("/foo/", ngx.req.get_method())
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+foo: [""]
+hit
+foo: ["\/"]
+hit
