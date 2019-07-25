@@ -53,7 +53,7 @@ ${C_SO_NAME} : ${OBJS}
 	$(CC) $(MY_LDFLAGS) $(OBJS) $(R3_FOLDER)/.libs/libr3.a -o $@
 
 ${R3_FOLDER} :
-	git clone -b 2.0.1-iresty https://github.com/iresty/r3.git
+	git clone -b 2.0.2-iresty https://github.com/iresty/r3.git
 
 ${R3_CONGIGURE} :
 	cd $(R3_FOLDER) && ./autogen.sh
