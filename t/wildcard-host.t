@@ -12,7 +12,7 @@ __DATA__
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -55,7 +55,7 @@ hit
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -96,11 +96,11 @@ not hit
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             local function bar(params)
-                ngx.say("bar: ", require("cjson").encode(params))
+                ngx.say("bar: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -152,7 +152,7 @@ hit
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -184,7 +184,7 @@ GET /foo/idv/namev
 --- no_error_log
 [error]
 --- response_body
-foo: {}
+foo: []
 hit
 
 
@@ -195,7 +195,7 @@ hit
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
