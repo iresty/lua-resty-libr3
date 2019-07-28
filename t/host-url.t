@@ -12,7 +12,7 @@ __DATA__
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -42,11 +42,11 @@ GET /foo/idv/namev
 --- no_error_log
 [error]
 --- response_body
-foo: {"name":"namev","domain":"localhost","id":"idv"}
+foo: {"domain":"localhost","id":"idv","name":"namev"}
 hit
-foo: {"name":"namev","domain":"127.0.0.1","id":"idv"}
+foo: {"domain":"127.0.0.1","id":"idv","name":"namev"}
 hit
-foo: {"name":"namev","domain":"foo.com","id":"idv"}
+foo: {"domain":"foo.com","id":"idv","name":"namev"}
 hit
-foo: {"name":"namev","domain":"www.foo.com","id":"idv"}
+foo: {"domain":"www.foo.com","id":"idv","name":"namev"}
 hit

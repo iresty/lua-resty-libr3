@@ -9,11 +9,14 @@ log_level('info');
 no_long_string();
 no_shuffle();
 
+my $pwd = `pwd`;
+chomp $pwd;
+
 add_block_preprocessor(sub {
     my ($block) = @_;
 
     my $http_config = $block->http_config // <<_EOC_;
-    lua_package_path 'lib/?.lua;;';
+    lua_package_path '$pwd/t/lib/?.lua;lib/?.lua;;';
     lua_package_cpath './?.so;;';
 _EOC_
 

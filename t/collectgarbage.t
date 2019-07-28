@@ -13,7 +13,7 @@ location /foo {
         local function test()
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -92,7 +92,7 @@ location /foo {
             t[res] = (t[res] or 0) + 1
             collectgarbage()
         end
-        ngx.say(require("cjson").encode(t))
+        ngx.say(require("ljson").encode(t))
     }
 }
 --- request

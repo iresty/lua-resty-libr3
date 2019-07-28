@@ -12,7 +12,7 @@ __DATA__
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -59,7 +59,7 @@ hit
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
@@ -98,7 +98,7 @@ not hit
         content_by_lua_block {
             -- foo handler
             local function foo(params)
-                ngx.say("foo: ", require("cjson").encode(params))
+                ngx.say("foo: ", require("ljson").encode(params))
             end
 
             -- r3 router
