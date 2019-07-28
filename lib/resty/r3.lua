@@ -25,6 +25,7 @@ local type        = type
 local error       = error
 local newproxy    = _G.newproxy
 local str_sub     = string.sub
+local ngx         = ngx
 
 
 local function load_shared_lib(so_name)
@@ -110,6 +111,10 @@ end
 
 
 local function gc_free(self)
+    if ngx.worker.exiting() then
+        return
+    end
+
     self:free()
 end
 
