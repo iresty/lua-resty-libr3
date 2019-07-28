@@ -2,6 +2,7 @@
 
 use t::R3 'no_plan';
 
+repeat_each(4);
 run_tests();
 
 __DATA__
@@ -733,4 +734,63 @@ hit
 foo: []
 hit
 foo: ["v2/v"]
+hit
+
+
+
+=== TEST 20: bug: multiple similar rules (todo)
+--- http_config
+lua_package_path "$prefix/?.lua;;";
+--- config
+    location /t {
+        content_by_lua_block {
+            local r = require("html.r3_obj").get()
+
+            -- r:compile()
+
+            for _, url in ipairs({"/v2/web2.txt"}) do
+                local ok = r:dispatch(url, {host = "web2.lvh.me"})
+                if ok then
+                    ngx.say("hit")
+                else
+                    ngx.say("not hit")
+                end
+            end
+        }
+    }
+--- user_files
+>>> ../html/r3_obj.lua
+
+-- foo handler
+local function foo(params)
+    ngx.say("foo: ", require("cjson").encode(params))
+end
+
+-- r3 router
+local r3router = require "resty.r3"
+local routes = {
+    {host = "web2.lvh.me", path = "/{:.*}", handler = foo},
+    {host = "web2.lvh.me", path = "/v2/{:.*}", handler = foo},
+}
+local r = r3router.new(routes)
+
+r:compile()
+
+local _M = {
+    obj = r,
+    routes = rotes,
+}
+
+function _M.get()
+    return _M.obj
+end
+
+return _M
+
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+foo: ["v2\/web2.txt"]
 hit
