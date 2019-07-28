@@ -681,3 +681,56 @@ foo: [""]
 hit
 foo: ["\/"]
 hit
+
+
+
+=== TEST 19: multiple similar rules
+--- config
+    location /t {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("cjson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {host = "web2.lvh.me", path = "/", handler = foo},
+                {host = "web2.lvh.me", path = "/{:.*}", handler = foo},
+                {host = "web2.lvh.me", path = "/v2", handler = foo},
+                {host = "web2.lvh.me", path = "/v2/", handler = foo},
+                {host = "web2.lvh.me", path = "/v2/{:.*}", handler = foo},
+            })
+
+            -- insert route
+            r:get("/foo{:/?}", foo)
+
+            -- don't forget!
+            r:compile()
+
+            for _, url in ipairs({"/", "/v", "/v2", "/v2/", "/v2/v"}) do
+                local ok = r:dispatch(url, {host = "web2.lvh.me"})
+                if ok then
+                    ngx.say("hit")
+                else
+                    ngx.say("not hit")
+                end
+            end
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+foo: {}
+hit
+foo: ["v"]
+hit
+foo: {}
+hit
+foo: {}
+hit
+foo: ["v2\/v"]
+hit
