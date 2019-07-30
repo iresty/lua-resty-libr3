@@ -240,7 +240,7 @@ function _M.new(routes, opts)
     local route_n = routes and #routes or 10
     local disable_path_cache_opt = opts and opts.disable_path_cache_opt
 
-    local pool = C.ngx_create_pool(128, fake_ngx_cycle.log)
+    local pool = C.ngx_create_pool(128, fake_ngx_cycle.log)     -- size: 128
     if not pool then
         error("failed to create single pool for r3 object")
     end
