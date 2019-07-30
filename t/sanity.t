@@ -2,7 +2,7 @@
 
 use t::R3 'no_plan';
 
-repeat_each(5);
+repeat_each(10);
 run_tests();
 
 __DATA__

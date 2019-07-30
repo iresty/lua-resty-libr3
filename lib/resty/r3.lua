@@ -13,6 +13,7 @@ local ffi         = require "ffi"
 local ffi_cast    = ffi.cast
 local ffi_cdef    = ffi.cdef
 local ffi_string  = ffi.string
+local C           = ffi.C
 local insert_tab  = table.insert
 local string      = string
 local io          = io
@@ -113,7 +114,7 @@ void *memcpy(void *dest, const void *src, size_t n);
 
 
 local fake_ngx_cycle = ffi.new("fake_ngx_cycle")
-r3.memcpy(fake_ngx_cycle, r3.ngx_cycle, ffi.sizeof("fake_ngx_cycle"))
+C.memcpy(fake_ngx_cycle, C.ngx_cycle, ffi.sizeof("fake_ngx_cycle"))
 
 
 local _M = { _VERSION = '0.01' }
@@ -134,7 +135,7 @@ local function gc_free(self)
     -- end
 
     if self.pool then
-        r3.ngx_destroy_pool(self.pool)
+        C.ngx_destroy_pool(self.pool)
         self.pool = nil
     end
 
@@ -239,12 +240,12 @@ function _M.new(routes, opts)
     local route_n = routes and #routes or 10
     local disable_path_cache_opt = opts and opts.disable_path_cache_opt
 
-    local pool = r3.ngx_create_pool(128, fake_ngx_cycle.log)
+    local pool = C.ngx_create_pool(128, fake_ngx_cycle.log)
     if not pool then
         error("failed to create single pool for r3 object")
     end
 
-    local old_pool = r3.ngx_http_lua_pcre_malloc_init(pool)
+    local old_pool = C.ngx_http_lua_pcre_malloc_init(pool)
 
     local self = setmt__gc({
             pool = pool,
@@ -313,7 +314,7 @@ end
 function _M.compile(self)
     local ret = r3.r3_compile(self.tree, nil)
     if self.old_pool then
-        r3.ngx_http_lua_pcre_malloc_done(self.old_pool)
+        C.ngx_http_lua_pcre_malloc_done(self.old_pool)
         self.old_pool = nil
     end
 
