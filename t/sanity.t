@@ -2,7 +2,7 @@
 
 use t::R3 'no_plan';
 
-repeat_each(4);
+repeat_each(5);
 run_tests();
 
 __DATA__
@@ -739,8 +739,6 @@ hit
 
 
 === TEST 20: bug: multiple similar rules (todo)
---- http_config
-lua_package_path "$prefix/?.lua;;";
 --- config
     location /t {
         content_by_lua_block {
