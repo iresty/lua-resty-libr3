@@ -13,6 +13,7 @@ local ffi         = require "ffi"
 local ffi_cast    = ffi.cast
 local ffi_cdef    = ffi.cdef
 local ffi_string  = ffi.string
+local C           = ffi.C
 local insert_tab  = table.insert
 local string      = string
 local io          = io
@@ -25,7 +26,6 @@ local type        = type
 local error       = error
 local newproxy    = _G.newproxy
 local str_sub     = string.sub
-local ngx         = ngx
 
 
 local function load_shared_lib(so_name)
@@ -95,7 +95,26 @@ int r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
 void r3_match_entry_free(void *entry);
 
 unsigned int inet_network(const char *cp);
+
+void *ngx_create_pool(size_t size, void *log);
+void ngx_destroy_pool(void *pool);
+void *ngx_http_lua_pcre_malloc_init(void *pool);
+void ngx_http_lua_pcre_malloc_done(void *old_pool);
+
+extern void *ngx_cycle;
+
+typedef struct {
+    void            ****conf_ctx;
+    void               *pool;
+    void               *log;
+} fake_ngx_cycle;
+
+void *memcpy(void *dest, const void *src, size_t n);
 ]]
+
+
+local fake_ngx_cycle = ffi.new("fake_ngx_cycle")
+C.memcpy(fake_ngx_cycle, C.ngx_cycle, ffi.sizeof("fake_ngx_cycle"))
 
 
 local _M = { _VERSION = '0.01' }
@@ -111,8 +130,13 @@ end
 
 
 local function gc_free(self)
-    if ngx.worker.exiting() then
-        return
+    -- if ngx.worker.exiting() then
+    --     return
+    -- end
+
+    if self.pool then
+        C.ngx_destroy_pool(self.pool)
+        self.pool = nil
     end
 
     self:free()
@@ -216,15 +240,24 @@ function _M.new(routes, opts)
     local route_n = routes and #routes or 10
     local disable_path_cache_opt = opts and opts.disable_path_cache_opt
 
+    local pool = C.ngx_create_pool(128, fake_ngx_cycle.log)     -- size: 128
+    if not pool then
+        error("failed to create single pool for r3 object")
+    end
+
+    local old_pool = C.ngx_http_lua_pcre_malloc_init(pool)
+
     local self = setmt__gc({
-                            tree = r3.r3_create(route_n),
-                            hash_path = new_tab(0, route_n),
-                            r3_nodes = new_tab(128, 0),
-                            match_data_index = 0,
-                            match_data = new_tab(route_n, 0),
-                            disable_path_cache_opt = disable_path_cache_opt,
-                            cached_route_conf = new_tab(128, 0),
-                            }, mt)
+            pool = pool,
+            old_pool = old_pool,
+            tree = r3.r3_create(route_n),
+            hash_path = new_tab(0, route_n),
+            r3_nodes = new_tab(128, 0),
+            match_data_index = 0,
+            match_data = new_tab(route_n, 0),
+            disable_path_cache_opt = disable_path_cache_opt,
+            cached_route_conf = new_tab(128, 0),
+        }, mt)
 
     if not routes then return self end
 
@@ -279,7 +312,13 @@ end
 
 
 function _M.compile(self)
-    return r3.r3_compile(self.tree, nil)
+    local ret = r3.r3_compile(self.tree, nil)
+    if self.old_pool then
+        C.ngx_http_lua_pcre_malloc_done(self.old_pool)
+        self.old_pool = nil
+    end
+
+    return ret
 end
 
 
