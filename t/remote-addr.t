@@ -342,3 +342,33 @@ GET /foo/idv/namev
 [error]
 --- response_body
 not hit
+
+
+
+=== TEST 9: invalid ip address
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("ljson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {
+                    path = [[/foo/{:\w+}/{:\w+}]],
+                    remote_addr = "127.0.0.1a",
+                    handler = foo,
+                }
+            })
+
+            r:compile()
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- error_log
+invalid ipv4 address
+--- error_code: 500

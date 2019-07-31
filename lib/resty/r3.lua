@@ -110,6 +110,9 @@ typedef struct {
 } fake_ngx_cycle;
 
 void *memcpy(void *dest, const void *src, size_t n);
+
+int is_valid_ipv4(const char *ipv4);
+int is_valid_ipv6(const char *ipv6);
 ]]
 
 
@@ -292,16 +295,21 @@ function _M.new(routes, opts)
         route_opts.host    = route.host
 
         if route.remote_addr then
-            local idx = find_str(route.remote_addr, "/", 1, true)
-            if idx then
-                route_opts.remote_addr  = str_sub(route.remote_addr, 1, idx - 1)
-                route_opts.remote_addr_bits = str_sub(route.remote_addr,
-                                                      idx + 1)
+            local remote_addr = route.remote_addr
+            local remote_addr_bits = 32
 
-            else
-                route_opts.remote_addr = route.remote_addr
-                route_opts.remote_addr_bits = 32
+            local idx = find_str(remote_addr, "/", 1, true)
+            if idx then
+                remote_addr  = str_sub(remote_addr, 1, idx - 1)
+                remote_addr_bits = str_sub(route.remote_addr, idx + 1)
             end
+
+            if r3.is_valid_ipv4(remote_addr) ~= 1 then
+                error("invalid ipv4 address")
+            end
+
+            route_opts.remote_addr = remote_addr
+            route_opts.remote_addr_bits = remote_addr_bits
         end
 
         insert_route(self, route_opts)
