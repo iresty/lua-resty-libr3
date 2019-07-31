@@ -304,12 +304,17 @@ function _M.new(routes, opts)
                 remote_addr_bits = str_sub(route.remote_addr, idx + 1)
             end
 
-            if r3.is_valid_ipv4(remote_addr) ~= 1 then
-                error("invalid ipv4 address")
-            end
+            if r3.is_valid_ipv4(remote_addr) == 1 then
+                route_opts.remote_addr = remote_addr
+                route_opts.remote_addr_bits = remote_addr_bits
 
-            route_opts.remote_addr = remote_addr
-            route_opts.remote_addr_bits = remote_addr_bits
+            elseif r3.is_valid_ipv6(remote_addr) == 1 then
+                route_opts.remote_addr = remote_addr
+                route_opts.remote_addr_bits = remote_addr_bits
+
+            else
+                error("invalid ip address: " .. route.remote_addr)
+            end
         end
 
         insert_route(self, route_opts)

@@ -370,5 +370,5 @@ not hit
 --- request
 GET /foo/idv/namev
 --- error_log
-invalid ipv4 address
+invalid ip address
 --- error_code: 500
