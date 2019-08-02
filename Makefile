@@ -3,7 +3,7 @@ INST_LIBDIR ?= $(INST_PREFIX)/lib/lua/5.1
 INST_LUADIR ?= $(INST_PREFIX)/share/lua/5.1
 INSTALL ?= install
 UNAME ?= $(shell uname)
-R3_CONFIGURE_OPT
+R3_CONFIGURE_OPT ?=
 
 CFLAGS := -O3 -g -Wall -fpic
 
