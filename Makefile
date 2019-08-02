@@ -3,6 +3,7 @@ INST_LIBDIR ?= $(INST_PREFIX)/lib/lua/5.1
 INST_LUADIR ?= $(INST_PREFIX)/share/lua/5.1
 INSTALL ?= install
 UNAME ?= $(shell uname)
+R3_CONFIGURE_OPT ?=
 
 CFLAGS := -O3 -g -Wall -fpic
 
@@ -14,6 +15,7 @@ LDFLAGS := -shared
 ifeq ($(UNAME),Darwin)
 	LDFLAGS := -bundle -undefined dynamic_lookup
 	C_SO_NAME := libr3.dylib
+	R3_CONFIGURE_OPT := --host=x86_64
 endif
 
 MY_CFLAGS := $(CFLAGS) -DBUILDING_SO
@@ -59,7 +61,7 @@ ${R3_CONGIGURE} :
 	cd $(R3_FOLDER) && ./autogen.sh
 
 ${R3_STATIC_LIB} :
-	cd $(R3_FOLDER) && ./configure && make
+	cd $(R3_FOLDER) && ./configure $(R3_CONFIGURE_OPT) && make
 
 
 ### install:      Install the library to runtime
