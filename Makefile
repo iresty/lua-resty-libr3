@@ -10,6 +10,8 @@ CFLAGS := -O3 -g -Wall -fpic
 C_SO_NAME := libr3.so
 LDFLAGS := -shared
 
+BUILDER_IMAGE = lua-resty-libr3-builder
+
 # on Mac OS X, one should set instead:
 # for Mac OS X environment, use one of options
 ifeq ($(UNAME),Darwin)
@@ -33,8 +35,7 @@ default: compile
 .PHONY: test
 test: compile
 	TEST_NGINX_LOG_LEVEL=info \
-	prove -I../test-nginx/lib -r -s t/
-
+	prove -I../test-nginx/lib -I./ -r -s t/
 
 ### clean:        Remove generated files
 .PHONY: clean
@@ -71,6 +72,16 @@ install:
 	$(INSTALL) lib/resty/*.lua $(INST_LUADIR)/resty/
 	$(INSTALL) $(C_SO_NAME) $(INST_LIBDIR)/
 
+docker-builder:
+	docker build -t $(BUILDER_IMAGE) .
+
+### build-in-docker:	Build the package a in Docker image
+build-in-docker: clean docker-builder
+	docker run -v `pwd`:/app/ $(BUILDER_IMAGE):latest bash -c 'cd /app && make compile'
+
+### test-in-docker:	Test the package in a Docker image
+test-in-docker: clean docker-builder
+	docker run -v `pwd`:/app/ $(BUILDER_IMAGE):latest bash -c 'cd /app && make test'
 
 ### help:         Show Makefile rules
 .PHONY: help
