@@ -46,7 +46,7 @@ Synopsys
          r3:compile()
 
          -- dispatch
-         local ok = r3:dispatch(ngx.req.get_method(), "/foo/a/b")
+         local ok = r3:dispatch("/foo/a/b", ngx.req.get_method())
          if not ok then
              ngx.exit(404)
          end
@@ -192,7 +192,7 @@ dispatch
 Dispatchs the path to the controller by `method`, `path` and `host`.
 
 ```lua
-local ok = r3:dispatch(ngx.req.get_method(), ngx.var.uri)
+local ok = r3:dispatch(ngx.var.uri, ngx.req.get_method())
 ```
 
 [Back to TOC](#table-of-contents)
