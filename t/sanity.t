@@ -792,3 +792,47 @@ GET /t
 --- response_body
 foo: ["v2\/web2.txt"]
 hit
+
+
+
+=== TEST 21: missing method
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("ljson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {path = "/hello", method = {"GET"}, handler = foo},
+            })
+
+            -- don't forget!
+            r:compile()
+
+            local ok = r:dispatch("/hello", ngx.req.get_method())
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+
+            ok = r:dispatch("/hello", {})
+            if ok then
+                ngx.say("hit")
+            else
+                ngx.say("not hit")
+            end
+        }
+    }
+--- request
+GET /foo/a/b
+--- no_error_log
+[error]
+--- response_body
+foo: []
+hit
+not hit
