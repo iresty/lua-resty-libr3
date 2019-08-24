@@ -130,9 +130,10 @@ end
 
 
 local function gc_free(self)
-    -- if ngx.worker.exiting() then
-    --     return
-    -- end
+    if ngx.worker.exiting() then
+        self.pool = nil
+        return
+    end
 
     if self.pool then
         C.ngx_destroy_pool(self.pool)
@@ -327,12 +328,12 @@ function _M.free(self)
         return
     end
 
-    r3.r3_free(self.tree)
-    self.tree = nil
-
     for _, r3_node in ipairs(self.r3_nodes) do
         r3.r3_route_attribute_free(r3_node)
     end
+
+    r3.r3_free(self.tree)
+    self.tree = nil
 end
 
 
@@ -464,9 +465,11 @@ end
 
 local function match_by_path_cache(route, params, opts, ...)
     local method = opts and opts.method
-    if route.bit_methods ~= 0 and
-        bit.band(route.bit_methods, _METHODS[method]) == 0 then
-        return false
+    if route.bit_methods ~= 0 then
+        if not method or type(_METHODS[method]) ~= "number" or
+           bit.band(route.bit_methods, _METHODS[method]) == 0 then
+            return false
+        end
     end
 
     if route.host then
