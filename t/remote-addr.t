@@ -342,3 +342,79 @@ GET /foo/idv/namev
 [error]
 --- response_body
 not hit
+
+
+
+=== TEST 9: invalid remote address
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("ljson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {
+                    path = [[/foo/idv/namev]],
+                    remote_addr = "127.0.0.1",
+                    handler = foo,
+                }
+            })
+
+            r:compile()
+
+            local invalid_addr = {nil, "127.0.0.333"}
+            for i = 1, 2 do
+                local ok = r:dispatch(ngx.var.uri, {
+                        method = ngx.req.get_method(),
+                        remote_addr = invalid_addr[i],
+                    })
+
+                if ok then
+                    ngx.say("hit")
+                else
+                    ngx.say("not hit")
+                end
+            end
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- no_error_log
+[error]
+--- response_body
+not hit
+not hit
+
+
+
+=== TEST 10: invalid remote address (new router)
+--- config
+    location /foo {
+        content_by_lua_block {
+            -- foo handler
+            local function foo(params)
+                ngx.say("foo: ", require("ljson").encode(params))
+            end
+
+            -- r3 router
+            local r3router = require "resty.r3"
+            local r = r3router.new({
+                {
+                    path = [[/foo/idv/namev]],
+                    remote_addr = "127.0.0.333",
+                    handler = foo,
+                }
+            })
+
+            r:compile()
+        }
+    }
+--- request
+GET /foo/idv/namev
+--- error_log
+invalid argument remote_addr
+--- error_code: 500

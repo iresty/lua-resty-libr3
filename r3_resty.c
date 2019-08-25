@@ -190,3 +190,37 @@ r3_match_entry_free(void *entry)
     match_entry_free(r3_entry);
     return;
 }
+
+
+int
+is_valid_ipv4(const char *ipv4)
+{
+    struct      in_addr addr;
+
+    if(ipv4 == NULL) {
+        return -1;
+    }
+
+    if(inet_pton(AF_INET, ipv4, (void *)&addr) != 1) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+is_valid_ipv6(const char *ipv6)
+{
+    struct in6_addr addr6;
+
+    if(ipv6 == NULL) {
+        return -1;
+    }
+
+    if(inet_pton(AF_INET6, ipv6, (void *)&addr6) != 1) {
+        return -1;
+    }
+
+    return 0;
+}

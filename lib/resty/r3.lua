@@ -110,6 +110,9 @@ typedef struct {
 } fake_ngx_cycle;
 
 void *memcpy(void *dest, const void *src, size_t n);
+
+int is_valid_ipv4(const char *ipv4);
+int is_valid_ipv6(const char *ipv6);
 ]]
 
 
@@ -147,7 +150,7 @@ end
 local mt = { __index = _M, __gc = gc_free }
 
 
-local bit = require "bit"
+local bit = require("bit")
 local _METHOD_GET     = 2
 local _METHOD_POST    = bit.lshift(2,1)
 local _METHOD_PUT     = bit.lshift(2,2)
@@ -183,6 +186,10 @@ local function insert_route(self, opts)
 
     if type(handler) ~= "function" then
         error("invalid argument handler")
+    end
+
+    if r3.is_valid_ipv4(remote_addr) ~= 0 then
+        error("invalid argument remote_addr")
     end
 
     if not method or not path or not handler then
@@ -489,6 +496,14 @@ local function match_by_path_cache(route, params, opts, ...)
     end
 
     if route.remote_addr and route.remote_addr > 0 then
+        if not opts.remote_addr then
+            return false
+        end
+
+        if r3.is_valid_ipv4(opts.remote_addr) ~= 0 then
+            return false
+        end
+
         local remote_addr_inet = r3.inet_network(opts.remote_addr)
         if bit.rshift(route.remote_addr, 32 - route.remote_addr_bits)
             ~= bit.rshift(remote_addr_inet, 32 - route.remote_addr_bits) then
