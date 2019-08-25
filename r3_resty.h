@@ -54,6 +54,9 @@ size_t r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
 
 void r3_match_entry_free(void *entry);
 
+int is_valid_ipv4(const char *ipv4);
+int is_valid_ipv6(const char *ipv6);
+
 #ifdef __cplusplus
 }
 #endif
