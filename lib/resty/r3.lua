@@ -441,7 +441,7 @@ function _M.insert_route(self, path, handler, opts)
     local remote_addr_bits
     if opts then
         method = opts.method
-        path   = opts.path
+        path   = opts.path or path
         host   = opts.host
         remote_addr      = opts.remote_addr
         remote_addr_bits = opts.remote_addr_bits
