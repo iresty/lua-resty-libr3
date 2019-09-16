@@ -431,7 +431,7 @@ function _M.insert_route(self, path, handler, opts)
         error("invalid argument handler", 2)
     end
 
-    if opts and type(handler) ~= "table" then
+    if opts and type(opts) ~= "table" then
         error("invalid argument opts", 2)
     end
 
