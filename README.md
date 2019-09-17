@@ -215,9 +215,12 @@ Install
 ### Dependent library
 
 ```shell
-# ubuntu
+# Ubuntu
 sudo apt-get install check libpcre3 libpcre3-dev build-essential libtool \
     automake autoconf pkg-config
+# CentOS 7
+sodu yum install gcc gcc-c++ git make automake autoconf pcre pcre-devel \
+    libtool pkgconfig     
 ```
 
 ### Compile and install
