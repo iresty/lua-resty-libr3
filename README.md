@@ -10,7 +10,7 @@ Table of Contents
 
 * [Name](#name)
 * [Status](#status)
-* [Synopsys](#synopsys)
+* [Synopsis](#synopsis)
 * [Methods](#methods)
     * [new](#new)
     * [insert_route](#insert_route)
@@ -25,7 +25,7 @@ Status
 
 **This repository is an experimental.**
 
-Synopsys
+Synopsis
 ========
 
 ```lua
