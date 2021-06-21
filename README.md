@@ -2,6 +2,7 @@ Name
 ====
 This is Lua-Openresty implementation library base on FFI for [libr3](https://github.com/c9s/r3).
  
+*NOTICE:* 
 The Apache APISIX has changed the router to [lua-resty-radixtree](https://github.com/api7/lua-resty-radixtree), which is better than this library. It is highly recommended that you use the new routing implementation. 
 
 
